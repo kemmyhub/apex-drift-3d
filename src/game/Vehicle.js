@@ -79,6 +79,7 @@ class Vehicle {
             root.add(chassis);
 
             // Sculpted Cabin
+            const style = this.carSpec.bodyStyle || "coupe";
             const cabinWidth = this.carSpec.bodyStyle === 'prototype' ? 1.5 : 1.75;
             const cabin = new THREE.Mesh(new THREE.BoxGeometry(cabinWidth, 0.58, 2.1), glassMat);
             cabin.position.set(0, style === "prototype" ? 1.12 : 1.18, style === "prototype" ? -0.12 : -0.15);
@@ -102,8 +103,44 @@ class Vehicle {
             roof.position.set(0, 1.49, -0.2);
             root.add(roof);
 
+            const wing = new THREE.Mesh(new THREE.BoxGeometry(style === "tuner" ? 2.55 : 2.15, style === "prototype" ? 0.08 : 0.12, style === "prototype" ? 0.34 : 0.48), darkMat);
+            wing.position.set(0, 1.24, -1.95);
+            wing.castShadow = true;
+            root.add(wing);
+
+            [-0.75, 0.75].forEach(x => {
+                const strut = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.35, 0.25), darkMat);
+                strut.position.set(x, 1.05, -1.95);
+                root.add(strut);
+            });
+
+            // Headlights & Taillights
+            const headMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+            const tailMat = new THREE.MeshBasicMaterial({ color: 0xff2a55 });
+            [-0.7, 0.7].forEach(x => {
+                const hl = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.16, 0.08), headMat);
+                hl.position.set(x, 0.68, 2.21);
+                root.add(hl);
+
+                const tl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.08), tailMat);
+                tl.position.set(x, 0.72, -2.21);
+                root.add(tl);
+            });
+
+            // Full-width signature LED lighting for stronger readability at speed.
+            const frontBar = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.075, 0.06), headMat);
+            frontBar.position.set(0, 0.76, 2.23);
+            root.add(frontBar);
+            const rearBar = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.09, 0.06), tailMat);
+            rearBar.position.set(0, 0.77, -2.23);
+            root.add(rearBar);
+
+            // Sculpted aero details, vents, side skirts and front splitter
+            const trimMat = new THREE.MeshStandardMaterial({ color: 0x080d18, metalness: 0.72, roughness: 0.28 });
+            const carbonMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.58, roughness: 0.34 });
+            const accentMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(this.colorHex), metalness: 0.55, roughness: 0.22, emissive: new THREE.Color(this.colorHex), emissiveIntensity: 0.16 });
+
             // Long sculpted bonnet and rear haunches give each chassis a stronger silhouette.
-            const style = this.carSpec.bodyStyle || "coupe";
             const bonnet = new THREE.Mesh(
                 new THREE.BoxGeometry(style === "prototype" ? 1.82 : 1.92, 0.2, style === "tuner" ? 1.48 : 1.7),
                 paintMat
@@ -146,42 +183,6 @@ class Vehicle {
             root.add(bonnetStripe);
 
             // Rear Spoiler Wing
-            const wing = new THREE.Mesh(new THREE.BoxGeometry(style === "tuner" ? 2.55 : 2.15, style === "prototype" ? 0.08 : 0.12, style === "prototype" ? 0.34 : 0.48), darkMat);
-            wing.position.set(0, 1.24, -1.95);
-            wing.castShadow = true;
-            root.add(wing);
-
-            [-0.75, 0.75].forEach(x => {
-                const strut = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.35, 0.25), darkMat);
-                strut.position.set(x, 1.05, -1.95);
-                root.add(strut);
-            });
-
-            // Headlights & Taillights
-            const headMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
-            const tailMat = new THREE.MeshBasicMaterial({ color: 0xff2a55 });
-            [-0.7, 0.7].forEach(x => {
-                const hl = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.16, 0.08), headMat);
-                hl.position.set(x, 0.68, 2.21);
-                root.add(hl);
-
-                const tl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.08), tailMat);
-                tl.position.set(x, 0.72, -2.21);
-                root.add(tl);
-            });
-
-            // Full-width signature LED lighting for stronger readability at speed.
-            const frontBar = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.075, 0.06), headMat);
-            frontBar.position.set(0, 0.76, 2.23);
-            root.add(frontBar);
-            const rearBar = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.09, 0.06), tailMat);
-            rearBar.position.set(0, 0.77, -2.23);
-            root.add(rearBar);
-
-            // Sculpted aero details, vents, side skirts and front splitter
-            const trimMat = new THREE.MeshStandardMaterial({ color: 0x080d18, metalness: 0.72, roughness: 0.28 });
-            const carbonMat = new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.58, roughness: 0.34 });
-            const accentMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(this.colorHex), metalness: 0.55, roughness: 0.22, emissive: new THREE.Color(this.colorHex), emissiveIntensity: 0.16 });
             const splitter = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.12, 0.62), carbonMat); splitter.position.set(0, 0.36, 2.12); root.add(splitter);
             const diffuser = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.16, 0.55), carbonMat); diffuser.position.set(0, 0.34, -2.12); root.add(diffuser);
             [-1, 1].forEach(side => { const skirt = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.22, 2.55), trimMat); skirt.position.set(side * 1.03, 0.37, -0.05); root.add(skirt); const sill = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.055, 2.35), accentMat); sill.position.set(side * 1.115, 0.48, -0.05); root.add(sill); });
