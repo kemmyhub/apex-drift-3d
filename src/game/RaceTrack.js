@@ -313,31 +313,38 @@ class RaceTrack {
                 });
             }
 
-            // Grandstands with roof ribs and coloured fascia around the start zone.
-            const standMat = new THREE.MeshStandardMaterial({ color: 0x26364d, roughness: 0.72 });
-            const roofMat = new THREE.MeshStandardMaterial({ color: 0x10243d, metalness: 0.45, roughness: 0.34 });
-            const seatMat = new THREE.MeshStandardMaterial({ color: 0x53677f, roughness: 0.82 });
-            [-38, -82].forEach((zPos, idx) => {
-                const stand = new THREE.Group();
-                const base = new THREE.Mesh(new THREE.BoxGeometry(15, 7, 34), standMat);
-                base.position.y = 3.5;
-                base.castShadow = true;
-                stand.add(base);
-                for (let row = 0; row < 5; row++) {
-                    const seats = new THREE.Mesh(new THREE.BoxGeometry(12.5, 0.3, 3.8), seatMat);
-                    seats.position.set(-1, 5 + row * 0.62, -12 + row * 4.2);
-                    stand.add(seats);
-                }
-                const roof = new THREE.Mesh(new THREE.BoxGeometry(18, 0.7, 38), roofMat);
-                roof.position.set(-1.5, 9.1, 0);
-                roof.castShadow = true;
-                stand.add(roof);
-                const fascia = new THREE.Mesh(new THREE.BoxGeometry(18.2, 0.28, 0.35), idx ? warmGlow : cyanGlow);
-                fascia.position.set(-1.5, 8.1, 17.2);
-                stand.add(fascia);
-                stand.position.set(25, 0, zPos);
-                this.group.add(stand);
-            });
+            // Grandstands are placed from the circuit spline, never at fixed world coordinates.
+            // This keeps large structures clear of the racing surface on every destination.
+            if (this.trackId === "neon-coast") {
+                const standMat = new THREE.MeshStandardMaterial({ color: 0x26364d, roughness: 0.72 });
+                const roofMat = new THREE.MeshStandardMaterial({ color: 0x10243d, metalness: 0.45, roughness: 0.34 });
+                const seatMat = new THREE.MeshStandardMaterial({ color: 0x53677f, roughness: 0.82 });
+                [0.025, 0.075].forEach((t, idx) => {
+                    const pt = this.curve.getPointAt(t);
+                    const tangent = this.curve.getTangentAt(t).normalize();
+                    const right = new THREE.Vector3(-tangent.z, 0, tangent.x);
+                    const stand = new THREE.Group();
+                    const base = new THREE.Mesh(new THREE.BoxGeometry(15, 5.5, 28), standMat);
+                    base.position.y = 2.75;
+                    base.castShadow = true;
+                    stand.add(base);
+                    for (let row = 0; row < 5; row++) {
+                        const seats = new THREE.Mesh(new THREE.BoxGeometry(12.5, 0.3, 3.2), seatMat);
+                        seats.position.set(-1, 4 + row * 0.55, -10 + row * 3.4);
+                        stand.add(seats);
+                    }
+                    const roof = new THREE.Mesh(new THREE.BoxGeometry(17, 0.6, 31), roofMat);
+                    roof.position.set(-1.5, 7.5, 0);
+                    roof.castShadow = true;
+                    stand.add(roof);
+                    const fascia = new THREE.Mesh(new THREE.BoxGeometry(17.2, 0.28, 0.35), idx ? warmGlow : cyanGlow);
+                    fascia.position.set(-1.5, 6.7, 14.1);
+                    stand.add(fascia);
+                    stand.position.copy(pt).addScaledVector(right, this.roadWidth / 2 + 18);
+                    stand.rotation.y = Math.atan2(tangent.x, tangent.z);
+                    this.group.add(stand);
+                });
+            }
 
             // Distinct trackside trees, instanced through shared geometry and materials.
             const random = createSeededRandom(this.trackId);
@@ -449,20 +456,31 @@ class RaceTrack {
             }
         }
 
-        // Find closest point & spline t parameter for a world position
+        // Find the nearest spline sample and signed lateral offset from the road centre.
+        // Signed lateral distance lets vehicle collision follow the actual curved track.
         getClosestTrackInfo(pos) {
             let minDistSq = Infinity;
             let bestIdx = 0;
             for (let i = 0; i < this.samples; i++) {
-                const dSq = pos.distanceToSquared(this.curvePoints[i]);
+                const point = this.curvePoints[i];
+                const dx = pos.x - point.x;
+                const dz = pos.z - point.z;
+                const dSq = dx * dx + dz * dz;
                 if (dSq < minDistSq) {
                     minDistSq = dSq;
                     bestIdx = i;
                 }
             }
+            const point = this.curvePoints[bestIdx];
+            const tangent = this.curve.getTangentAt(bestIdx / this.samples).normalize();
+            const right = new THREE.Vector3(-tangent.z, 0, tangent.x);
+            const lateral = (pos.x - point.x) * right.x + (pos.z - point.z) * right.z;
             return {
                 t: bestIdx / this.samples,
-                point: this.curvePoints[bestIdx],
+                point,
+                tangent,
+                right,
+                lateral,
                 distance: Math.sqrt(minDistSq)
             };
         }
