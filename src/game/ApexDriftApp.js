@@ -222,7 +222,7 @@ class ApexDriftApp {
             const resumeButton = document.getElementById('btn-resume-race');
             if (resumeButton) resumeButton.onclick = () => this.resumeRace();
             const restartButton = document.getElementById('btn-restart-race');
-            if (restartButton) restartButton.onclick = () => { const type = this.raceType; this.returnToMenu(); this.startRace(type); };
+            if (restartButton) restartButton.onclick = () => { const type = this.raceType; const roster = type === 'MP' ? Object.values(this.mp.players) : []; this.returnToMenu(); this.startRace(type, roster); };
             const pauseQuit = document.getElementById('btn-pause-quit');
             if (pauseQuit) pauseQuit.onclick = () => this.returnToMenu();
             const pauseButton = document.getElementById('btn-pause-race');
@@ -555,6 +555,7 @@ class ApexDriftApp {
             document.getElementById('btn-pause-race')?.classList.remove('hidden');
             document.getElementById('ui-race-hud').classList.remove('hidden');
             document.getElementById('btn-exit-race').classList.remove('hidden');
+            document.getElementById('btn-pause-race')?.classList.remove('hidden');
 
             document.getElementById('hud-total-cars').textContent = `/${this.vehicles.length}`;
             document.getElementById('hud-best-lap').textContent = isFinite(this.personalBestLap)
