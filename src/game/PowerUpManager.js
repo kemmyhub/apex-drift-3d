@@ -84,6 +84,13 @@ class PowerUpManager {
     for (const vehicle of vehicles) {
       if (vehicle.shieldTimer > 0) vehicle.shieldTimer = Math.max(0, vehicle.shieldTimer - dt);
       if (vehicle.stunTimer > 0) vehicle.stunTimer = Math.max(0, vehicle.stunTimer - dt);
+      if (vehicle.isAI && vehicle.weapon) {
+        vehicle.aiWeaponTimer = (vehicle.aiWeaponTimer || 0) + dt;
+        if (vehicle.aiWeaponTimer > 1.1 && Math.random() < dt * 0.45) {
+          vehicle.aiWeaponTimer = 0;
+          this.activate(vehicle, vehicles);
+        }
+      }
     }
   }
 
