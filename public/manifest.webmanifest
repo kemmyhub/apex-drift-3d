@@ -1,0 +1,10 @@
+{
+  "name": "APEX DRIFT 3D",
+  "short_name": "APEX DRIFT",
+  "description": "A browser-based 3D arcade racing game.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070b14",
+  "theme_color": "#070b14",
+  "icons": [{ "src": "/icons/apex-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
