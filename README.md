@@ -14,6 +14,7 @@ src/
     ApexDriftApp.js       Game lifecycle, menus, HUD and camera
     carCatalog.js         Vehicle specifications and paint options
     ProfileManager.js     Persistent driver XP, credits and race records
+    TrackCatalog.js       Selectable circuit layouts and environments
     RaceTrack.js          Circuit geometry and track environment
     Vehicle.js            Vehicle models, handling and AI driving
   network/
