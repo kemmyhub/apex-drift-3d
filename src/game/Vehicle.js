@@ -24,6 +24,9 @@ class Vehicle {
             this.isDrifting = false;
             this.boostTimer = 0;
             this.nitroCharge = 0;
+            this.weapon = null;
+            this.shieldTimer = 0;
+            this.stunTimer = 0;
             this.driftScore = 0;
             this.visualRoll = 0;
 
@@ -153,6 +156,15 @@ class Vehicle {
                 this.flameMeshes.push(flame);
             });
 
+            this.shieldMesh = new THREE.Mesh(
+                new THREE.TorusGeometry(2.15, 0.075, 10, 48),
+                new THREE.MeshBasicMaterial({ color: 0x42e8ff, transparent: true, opacity: 0.82 })
+            );
+            this.shieldMesh.rotation.x = Math.PI / 2;
+            this.shieldMesh.position.y = 1.15;
+            this.shieldMesh.visible = false;
+            root.add(this.shieldMesh);
+
             return root;
         }
 
@@ -175,6 +187,9 @@ class Vehicle {
             this.totalProgress = - (0.015 + row * 0.018);
             this.finished = false;
             this.boostTimer = 0;
+            this.weapon = null;
+            this.shieldTimer = 0;
+            this.stunTimer = 0;
             this.aiTargetT = (t + 0.035) % 1;
             this.syncMeshTransform(0);
         }
@@ -225,6 +240,12 @@ class Vehicle {
                 const aiCtrl = this.computeAIControls();
                 throttle = aiCtrl.throttle * 0.55;
                 steer = aiCtrl.steer;
+            }
+
+            if (this.stunTimer > 0) {
+                throttle = 0;
+                steer *= 0.22;
+                drift = false;
             }
 
             // Boost timer countdown
@@ -448,6 +469,7 @@ class Vehicle {
             this.mesh.position.copy(this.position);
             this.mesh.rotation.y = this.heading;
             this.mesh.rotation.z = this.visualRoll;
+            if (this.shieldMesh) this.shieldMesh.visible = this.shieldTimer > 0;
 
             // Spin wheels
             const wheelSpin = this.speed * dt * 2.2;
