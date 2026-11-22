@@ -366,9 +366,10 @@ class RaceTrack {
             }
 
             // Distant skyline silhouettes make the coastal circuit feel like a real venue.
-            const skylineMat = new THREE.MeshStandardMaterial({ color: 0x14263e, roughness: 0.9, metalness: 0.12 });
-            const skylineGlow = new THREE.MeshBasicMaterial({ color: 0x2b91bd });
-            for (let i = 0; i < 34; i++) {
+            if (this.trackId === "neon-coast") {
+                const skylineMat = new THREE.MeshStandardMaterial({ color: 0x14263e, roughness: 0.9, metalness: 0.12 });
+                const skylineGlow = new THREE.MeshBasicMaterial({ color: 0x2b91bd });
+                for (let i = 0; i < 34; i++) {
                 const angle = (i / 34) * Math.PI * 2;
                 const radius = 360 + (i % 4) * 22;
                 const width = 10 + (i % 5) * 3;
@@ -384,7 +385,40 @@ class RaceTrack {
                 }
                 building.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
                 building.rotation.y = -angle;
-                this.group.add(building);
+                    this.group.add(building);
+                }
+            } else {
+                // Give each destination its own horizon instead of reusing the coastal skyline.
+                const alpine = this.trackId === "alpine-pass";
+                const landformMat = new THREE.MeshStandardMaterial({
+                    color: alpine ? 0x526a78 : 0xa87945,
+                    roughness: 0.96,
+                    flatShading: true
+                });
+                const ridgeMat = new THREE.MeshStandardMaterial({
+                    color: alpine ? 0x9db8c5 : 0xd7a86d,
+                    roughness: 1,
+                    flatShading: true
+                });
+                const landGeo = alpine ? new THREE.ConeGeometry(1, 1, 7) : new THREE.SphereGeometry(1, 9, 6);
+                for (let i = 0; i < 42; i++) {
+                    const angle = (i / 42) * Math.PI * 2;
+                    const radius = 350 + (i % 5) * 28;
+                    const height = alpine ? 65 + (i % 7) * 12 : 18 + (i % 6) * 5;
+                    const landform = new THREE.Mesh(landGeo, landformMat);
+                    landform.position.set(Math.cos(angle) * radius, alpine ? height * 0.42 : height * 0.08, Math.sin(angle) * radius);
+                    landform.scale.set(alpine ? 58 + (i % 4) * 13 : 65 + (i % 4) * 18, height, alpine ? 58 + (i % 3) * 12 : 48);
+                    landform.rotation.y = angle * 0.7;
+                    landform.castShadow = true;
+                    this.group.add(landform);
+                    if (alpine && i % 2 === 0) {
+                        const snowcap = new THREE.Mesh(new THREE.ConeGeometry(1, 1, 7), ridgeMat);
+                        snowcap.position.copy(landform.position);
+                        snowcap.position.y += height * 0.42;
+                        snowcap.scale.set(landform.scale.x * 0.34, height * 0.3, landform.scale.z * 0.34);
+                        this.group.add(snowcap);
+                    }
+                }
             }
         }
 
