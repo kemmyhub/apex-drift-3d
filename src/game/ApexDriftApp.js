@@ -20,7 +20,7 @@ class ApexDriftApp {
             this.selectedColor = PAINT_COLORS[0].hex;
             this.selectedTrackId = localStorage.getItem("apex_track") || "neon-coast";
             if (!TRACK_CATALOG.some(track => track.id === this.selectedTrackId)) this.selectedTrackId = "neon-coast";
-            this.mode = 'MENU'; // MENU | COUNTDOWN | RACING | PODIUM
+            this.mode = 'MENU'; // MENU | COUNTDOWN | RACING | PAUSED | PODIUM
             this.raceType = 'SP'; // SP | TT | MP
             this.vehicles = [];
             this.playerVehicle = null;
@@ -214,6 +214,20 @@ class ApexDriftApp {
                 document.getElementById('icon-sound-off').classList.toggle('hidden', !this.sound.muted);
             };
 
+            // Career overview and race pause controls
+            const careerButton = document.getElementById('btn-open-career');
+            if (careerButton) careerButton.onclick = () => this.openCareer();
+            const closeCareer = document.getElementById('btn-close-career');
+            if (closeCareer) closeCareer.onclick = () => document.getElementById('ui-career').classList.add('hidden');
+            const resumeButton = document.getElementById('btn-resume-race');
+            if (resumeButton) resumeButton.onclick = () => this.resumeRace();
+            const restartButton = document.getElementById('btn-restart-race');
+            if (restartButton) restartButton.onclick = () => { const type = this.raceType; this.returnToMenu(); this.startRace(type); };
+            const pauseQuit = document.getElementById('btn-pause-quit');
+            if (pauseQuit) pauseQuit.onclick = () => this.returnToMenu();
+            const pauseButton = document.getElementById('btn-pause-race');
+            if (pauseButton) pauseButton.onclick = () => this.togglePause();
+
             // Single Player & Time Trial Launchers
             document.getElementById('btn-start-sp').onclick = () => {
                 this.sound.init();
@@ -404,7 +418,8 @@ class ApexDriftApp {
             };
 
             window.addEventListener('keydown', e => {
-                if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+                if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+                if ((e.code === 'Escape' || e.code === 'KeyP') && ['RACING', 'PAUSED'].includes(this.mode)) { e.preventDefault(); this.togglePause(); return; }
                 if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
                     e.preventDefault();
                 }
@@ -424,6 +439,50 @@ class ApexDriftApp {
             bindTouch('touch-drift', 'drift');
             bindTouch('touch-gas', 'up');
             bindTouch('touch-boost', 'boost');
+        }
+
+        openCareer() {
+            const panel = document.getElementById('career-content');
+            if (!panel) return;
+            const p = this.profile.data;
+            const achievements = this.achievements.all;
+            const unlocked = achievements.filter(item => item.unlocked).length;
+            const best = p.bestLap ? this.formatTime(p.bestLap) : '--:--.--';
+            const carRows = CAR_MODELS.map(car => {
+                const levels = this.upgrades.levels(car.id);
+                const total = levels.engine + levels.handling + levels.nitro;
+                return `<div class="career-car"><div><strong>${car.name}</strong><span>${total}/15 upgrade levels</span></div><div class="career-mini-track"><i style="width:${total / 15 * 100}%"></i></div></div>`;
+            }).join('');
+            panel.innerHTML = `<div class="career-stats">
+                <div><span>DRIVER LEVEL</span><strong>${this.profile.level}</strong></div>
+                <div><span>RACE WINS</span><strong>${p.wins.toLocaleString()}</strong></div>
+                <div><span>PODIUMS</span><strong>${p.podiums.toLocaleString()}</strong></div>
+                <div><span>RACES</span><strong>${p.races.toLocaleString()}</strong></div>
+                <div><span>LIFETIME DRIFT</span><strong>${p.totalDriftPoints.toLocaleString()}</strong></div>
+                <div><span>BEST LAP</span><strong>${best}</strong></div>
+            </div>
+            <div class="career-section"><div class="career-section-title"><h3>DRIVER PROGRESSION</h3><span>${p.xp.toLocaleString()} / ${this.profile.nextLevelXP.toLocaleString()} XP</span></div><div class="career-progress"><i style="width:${this.profile.levelProgress}%"></i></div><p>${p.credits.toLocaleString()} credits available for garage upgrades</p></div>
+            <div class="career-section"><div class="career-section-title"><h3>ACHIEVEMENTS</h3><span>${unlocked} / ${achievements.length} UNLOCKED</span></div><div class="career-achievements">${achievements.map(item => `<article class="${item.unlocked ? 'is-unlocked' : 'is-locked'}"><div class="achievement-mark">${item.unlocked ? '★' : '◇'}</div><div><strong>${item.name}</strong><p>${item.description}</p></div><b>+${item.reward} CR</b></article>`).join('')}</div></div>
+            <div class="career-section"><div class="career-section-title"><h3>GARAGE DEVELOPMENT</h3><span>UPGRADES BY CAR</span></div><div class="career-cars">${carRows}</div></div>`;
+            document.getElementById('ui-career').classList.remove('hidden');
+        }
+
+        togglePause() {
+            if (this.mode === 'RACING' || this.mode === 'COUNTDOWN') {
+                this.modeBeforePause = this.mode;
+                this.mode = 'PAUSED';
+                this.input = { up:false, down:false, left:false, right:false, drift:false, boost:false };
+                document.getElementById('ui-pause').classList.remove('hidden');
+                document.getElementById('btn-pause-race')?.classList.add('hidden');
+                this.sound.updateVehicleAudio(0, false, false);
+            } else if (this.mode === 'PAUSED') this.resumeRace();
+        }
+
+        resumeRace() {
+            if (this.mode !== 'PAUSED') return;
+            this.mode = this.modeBeforePause === 'COUNTDOWN' ? 'RACING' : 'RACING';
+            document.getElementById('ui-pause').classList.add('hidden');
+            document.getElementById('btn-pause-race')?.classList.remove('hidden');
         }
 
         startRace(type, mpRoster = []) {
@@ -492,6 +551,8 @@ class ApexDriftApp {
             document.getElementById('ui-main-menu').classList.add('hidden');
             document.getElementById('ui-mp-lobby').classList.add('hidden');
             document.getElementById('ui-podium').classList.add('hidden');
+            document.getElementById('ui-pause').classList.add('hidden');
+            document.getElementById('btn-pause-race')?.classList.remove('hidden');
             document.getElementById('ui-race-hud').classList.remove('hidden');
             document.getElementById('btn-exit-race').classList.remove('hidden');
 
@@ -558,6 +619,8 @@ class ApexDriftApp {
 
         returnToMenu() {
             this.mode = 'MENU';
+            document.getElementById('ui-pause')?.classList.add('hidden');
+            document.getElementById('btn-pause-race')?.classList.remove('hidden');
             this.sound.updateVehicleAudio(0, false, false);
             this.clearVehicles();
             this.mp.leaveRoom();
@@ -797,8 +860,10 @@ class ApexDriftApp {
             }
 
             const activeRace = this.mode === 'RACING';
-            for (const v of this.vehicles) {
-                v.update(dt, this.input, this.vehicles, activeRace, this.raceClock, this.sound);
+            if (this.mode !== 'PAUSED') {
+                for (const v of this.vehicles) {
+                    v.update(dt, this.input, this.vehicles, activeRace, this.raceClock, this.sound);
+                }
             }
 
             // Broadcast local player telemetry in Multiplayer mode
