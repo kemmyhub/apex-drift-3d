@@ -49,7 +49,7 @@ class ApexDriftApp {
             this.scene.fog.color.setHex(initialTrack.fogColor);
             this.scene.fog.density = initialTrack.fogDensity;
             this.track = new RaceTrack(this.scene, this.selectedTrackId);
-            this.powerUps = new PowerUpManager(this.scene, this.track, message => { if (message) this.showToast(message); });
+            this.powerUps = new PowerUpManager(this.scene, this.track, message => { if (message) { this.showToast(message); if (this.sound) this.sound.playPickup(); } });
             this.buildPreviewShowcase();
             this.initUI();
             window.addEventListener("apex-storage-warning", event => {
@@ -139,7 +139,7 @@ class ApexDriftApp {
             this.scene.fog.color.setHex(config.fogColor);
             this.scene.fog.density = config.fogDensity;
             this.track = new RaceTrack(this.scene, trackId);
-            this.powerUps = new PowerUpManager(this.scene, this.track, message => { if (message) this.showToast(message); });
+            this.powerUps = new PowerUpManager(this.scene, this.track, message => { if (message) { this.showToast(message); if (this.sound) this.sound.playPickup(); } });
             this.updateTrackBrief();
             this.buildPreviewShowcase();
             this.showToast(config.name + " selected");
@@ -273,7 +273,7 @@ class ApexDriftApp {
             const pauseButton = document.getElementById('btn-pause-race');
             if (pauseButton) pauseButton.onclick = () => this.togglePause();
             const weaponButton = document.getElementById('btn-use-weapon');
-            if (weaponButton) weaponButton.onclick = () => { if (this.mode === 'RACING' && this.playerVehicle && this.powerUps) this.powerUps.activate(this.playerVehicle, this.vehicles); };
+            if (weaponButton) weaponButton.onclick = () => { if (this.mode === 'RACING' && this.playerVehicle && this.powerUps) { const weapon = this.playerVehicle.weapon; if (this.powerUps.activate(this.playerVehicle, this.vehicles) && weapon) this.sound.playWeapon(weapon); } };
 
             // Single Player & Time Trial Launchers
             document.getElementById('btn-start-sp').onclick = () => {
@@ -482,7 +482,7 @@ class ApexDriftApp {
                     else heldKeys.delete(code);
                     refreshAction(action);
                 }
-                if (state && code === 'KeyF' && this.mode === 'RACING' && this.playerVehicle && this.powerUps) this.powerUps.activate(this.playerVehicle, this.vehicles);
+                if (state && code === 'KeyF' && this.mode === 'RACING' && this.playerVehicle && this.powerUps) { const weapon = this.playerVehicle.weapon; if (this.powerUps.activate(this.playerVehicle, this.vehicles) && weapon) this.sound.playWeapon(weapon); }
                 if (state && code === 'KeyR' && this.mode === 'RACING' && this.playerVehicle) {
                     this.playerVehicle.resetToTrack();
                     this.showToast('Car repositioned onto track');
@@ -565,7 +565,7 @@ class ApexDriftApp {
                 return;
             }
             if (this.mode !== 'RACING') return;
-            if (state.pressed.fire && this.playerVehicle && this.powerUps) this.powerUps.activate(this.playerVehicle, this.vehicles);
+            if (state.pressed.fire && this.playerVehicle && this.powerUps) { const weapon = this.playerVehicle.weapon; if (this.powerUps.activate(this.playerVehicle, this.vehicles) && weapon) this.sound.playWeapon(weapon); }
             if (state.pressed.reset && this.playerVehicle) {
                 this.playerVehicle.resetToTrack();
                 this.showToast('Car repositioned onto track');
@@ -653,7 +653,7 @@ class ApexDriftApp {
             this.raceType = type;
             this.clearVehicles();
             if (this.powerUps) this.powerUps.dispose();
-            this.powerUps = new PowerUpManager(this.scene, this.track, message => { if (message) this.showToast(message); });
+            this.powerUps = new PowerUpManager(this.scene, this.track, message => { if (message) { this.showToast(message); if (this.sound) this.sound.playPickup(); } });
 
             if (this.showcaseCar) {
                 this.showcaseCar.dispose();
