@@ -20,6 +20,7 @@
 
     <!-- Global Top-Right Controls (Audio Mute + Quick Exit) -->
     <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <button id="btn-pause-race" class="hidden glass-panel px-3.5 py-2 rounded-xl text-xs font-bold tracking-wider uppercase text-cyan-200 hover:bg-cyan-500/20 border border-cyan-400/30 transition cursor-pointer">Ⅱ Pause</button>
         <button id="btn-exit-race" class="hidden glass-panel px-3.5 py-2 rounded-xl text-xs font-bold tracking-wider uppercase text-rose-400 hover:bg-rose-500/20 border border-rose-500/30 transition cursor-pointer">
             ✕ Quit Race
         </button>
@@ -51,11 +52,14 @@
             </div>
 
             <!-- Driver Profile Input -->
-            <div class="glass-panel px-4 py-2.5 rounded-2xl flex items-center gap-3 self-start sm:self-auto">
+            <div class="flex items-center gap-2 self-start sm:self-auto">
+            <button id="btn-open-career" class="glass-panel px-4 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider text-cyan-200 hover:text-white">Career <span class="text-white/60">↗</span></button>
+            <div class="glass-panel px-4 py-2.5 rounded-2xl flex items-center gap-3">
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Driver</span>
                 <input id="input-player-name" type="text" maxlength="14" value="Racer_01"
                     class="bg-slate-900/80 border border-slate-700 focus:border-sky-400 rounded-xl px-3 py-1.5 text-sm font-bold text-white outline-none w-36 sm:w-44 transition"
                     placeholder="Enter Name">
+            </div>
             </div>
         </div>
 
@@ -158,6 +162,18 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="ui-career" class="hidden fixed inset-0 z-[70] career-backdrop p-4 sm:p-8 overflow-y-auto">
+        <section class="glass-panel career-modal max-w-4xl mx-auto rounded-3xl p-5 sm:p-8 my-4">
+            <div class="flex items-start justify-between gap-4 mb-6"><div><p class="text-[10px] tracking-[.24em] text-cyan-300 font-bold">APEX DRIVER NETWORK</p><h2 class="font-racing text-2xl sm:text-3xl font-black mt-1">CAREER OVERVIEW</h2><p class="text-xs text-slate-400 mt-2">Your racing record, milestones and garage progress.</p></div><button id="btn-close-career" class="px-4 py-2 rounded-xl bg-slate-800 text-sm font-bold">✕ Close</button></div>
+            <div id="career-content" class="space-y-5"></div>
+        </section>
+    </div>
+
+    <div id="ui-pause" class="hidden fixed inset-0 z-[65] flex items-center justify-center p-4 pause-backdrop">
+        <section class="glass-panel pause-modal w-full max-w-md rounded-3xl p-7 sm:p-9 text-center"><p class="text-[10px] tracking-[.3em] text-cyan-300 font-bold">RACE CONTROL</p><h2 class="font-racing text-3xl font-black mt-2">PAUSED</h2><p class="text-sm text-slate-400 mt-2 mb-7">Take a breather. Your race is on hold.</p>
+            <div class="space-y-3"><button id="btn-resume-race" class="btn-glow w-full py-3.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 font-racing font-bold">RESUME RACE</button><button id="btn-restart-race" class="w-full py-3 rounded-xl bg-slate-800 text-white font-bold">RESTART RACE</button><button id="btn-pause-quit" class="w-full py-3 rounded-xl border border-rose-400/30 text-rose-300 font-bold">QUIT TO GARAGE</button></div><p class="text-[10px] text-slate-500 mt-5">Press P or ESC to resume</p></section>
     </div>
 
     <!-- ========================================================= -->
