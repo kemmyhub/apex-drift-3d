@@ -402,17 +402,24 @@ class Vehicle {
 
         handleTrackCollisions(sound) {
             const info = this.track.getClosestTrackInfo(this.position);
-            const maxAllowedDist = Math.max(0.5, this.track.roadWidth / 2 - 1.05);
-            const boundary = applyTrackBoundaryResponse(this.position, this.velocity, info.point, maxAllowedDist);
+            // The car's body and tyres need clearance from the painted road edge.
+            const maxLateral = Math.max(1.25, this.track.roadWidth / 2 - 1.55);
+            const lateral = Number.isFinite(info.lateral) ? info.lateral : 0;
+            if (Math.abs(lateral) > maxLateral) {
+                const side = Math.sign(lateral) || 1;
+                const corrected = info.point.clone().addScaledVector(info.right, side * maxLateral);
+                const penetration = Math.abs(lateral) - maxLateral;
+                this.position.x = corrected.x;
+                this.position.z = corrected.z;
 
-            if (boundary) {
-                this.position.set(boundary.position.x, this.position.y, boundary.position.z);
-                this.velocity.set(boundary.velocity.x, 0, boundary.velocity.z);
+                // Remove velocity into the barrier, retaining tangential motion along it.
+                const outwardSpeed = this.velocity.dot(info.right) * side;
+                if (outwardSpeed > 0) {
+                    this.velocity.addScaledVector(info.right, -outwardSpeed * 1.12 * side);
+                }
                 const forward = new THREE.Vector3(Math.sin(this.heading), 0, Math.cos(this.heading));
                 this.speed = this.velocity.dot(forward);
-                if (this.isPlayer && boundary.penetration > 0.35 && Math.abs(this.speed) > 20) {
-                    sound.playBump();
-                }
+                if (this.isPlayer && penetration > 0.2 && Math.abs(outwardSpeed) > 8) sound.playBump();
             }
 
             // Boost pad trigger
