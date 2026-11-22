@@ -7,6 +7,7 @@ import { ProfileManager } from "./ProfileManager.js";
 import { UpgradeManager, UPGRADE_TYPES } from "./UpgradeManager.js";
 import { AchievementManager } from "./AchievementManager.js";
 import { TRACK_CATALOG, getTrackConfig } from "./TrackCatalog.js";
+import { PowerUpManager } from "./PowerUpManager.js";
 
 const THREE = window.THREE;
 
@@ -37,6 +38,7 @@ class ApexDriftApp {
             this.scene.fog.color.setHex(initialTrack.fogColor);
             this.scene.fog.density = initialTrack.fogDensity;
             this.track = new RaceTrack(this.scene, this.selectedTrackId);
+            this.powerUps = new PowerUpManager(this.scene, this.track, message => { if (message) this.showToast(message); });
             this.buildPreviewShowcase();
             this.initUI();
             this.bindInputs();
@@ -113,6 +115,7 @@ class ApexDriftApp {
         changeTrack(trackId) {
             if (!TRACK_CATALOG.some(track => track.id === trackId) || trackId === this.selectedTrackId) return;
             if (this.showcaseCar) { this.showcaseCar.dispose(); this.showcaseCar = null; }
+            if (this.powerUps) this.powerUps.dispose();
             if (this.track) this.track.dispose();
             this.selectedTrackId = trackId;
             localStorage.setItem("apex_track", trackId);
@@ -121,6 +124,7 @@ class ApexDriftApp {
             this.scene.fog.color.setHex(config.fogColor);
             this.scene.fog.density = config.fogDensity;
             this.track = new RaceTrack(this.scene, trackId);
+            this.powerUps = new PowerUpManager(this.scene, this.track, message => { if (message) this.showToast(message); });
             this.buildPreviewShowcase();
             this.showToast(config.name + " selected");
         }
@@ -227,6 +231,8 @@ class ApexDriftApp {
             if (pauseQuit) pauseQuit.onclick = () => this.returnToMenu();
             const pauseButton = document.getElementById('btn-pause-race');
             if (pauseButton) pauseButton.onclick = () => this.togglePause();
+            const weaponButton = document.getElementById('btn-use-weapon');
+            if (weaponButton) weaponButton.onclick = () => { if (this.mode === 'RACING' && this.playerVehicle && this.powerUps) this.powerUps.activate(this.playerVehicle, this.vehicles); };
 
             // Single Player & Time Trial Launchers
             document.getElementById('btn-start-sp').onclick = () => {
@@ -411,6 +417,7 @@ class ApexDriftApp {
                 if (code === 'KeyD' || code === 'ArrowRight') this.input.right = state;
                 if (code === 'Space') this.input.drift = state;
                 if (code === 'ShiftLeft' || code === 'ShiftRight') this.input.boost = state;
+                if (state && code === 'KeyF' && this.mode === 'RACING' && this.playerVehicle && this.powerUps) this.powerUps.activate(this.playerVehicle, this.vehicles);
                 if (state && code === 'KeyR' && this.mode === 'RACING' && this.playerVehicle) {
                     this.playerVehicle.resetToTrack();
                     this.showToast('Car repositioned onto track');
@@ -419,6 +426,7 @@ class ApexDriftApp {
 
             window.addEventListener('keydown', e => {
                 if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+                if (e.code === 'KeyF') e.preventDefault();
                 if ((e.code === 'Escape' || e.code === 'KeyP') && ['RACING', 'PAUSED'].includes(this.mode)) { e.preventDefault(); this.togglePause(); return; }
                 if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
                     e.preventDefault();
@@ -488,6 +496,8 @@ class ApexDriftApp {
         startRace(type, mpRoster = []) {
             this.raceType = type;
             this.clearVehicles();
+            if (this.powerUps) this.powerUps.dispose();
+            this.powerUps = new PowerUpManager(this.scene, this.track, message => { if (message) this.showToast(message); });
 
             if (this.showcaseCar) {
                 this.showcaseCar.dispose();
@@ -728,6 +738,11 @@ class ApexDriftApp {
             document.getElementById('hud-rpm-bar').style.width = rpmPct + '%';
             document.getElementById('hud-nitro-bar').style.width = pv.nitroCharge + '%';
             document.getElementById('hud-nitro-value').textContent = Math.round(pv.nitroCharge) + '%';
+            const weaponName = pv.weapon ? ({ missile: 'MISSILE', shield: 'SHIELD', shockwave: 'SHOCKWAVE', nitro: 'TURBO CELL' }[pv.weapon] || pv.weapon.toUpperCase()) : 'NO WEAPON';
+            const weaponLabel = document.getElementById('hud-weapon-name');
+            const weaponButton = document.getElementById('btn-use-weapon');
+            if (weaponLabel) weaponLabel.textContent = weaponName;
+            if (weaponButton) { weaponButton.disabled = !pv.weapon; weaponButton.classList.toggle('weapon-ready', !!pv.weapon); }
             document.getElementById('hud-drift-score').textContent = pv.driftScore.toLocaleString();
             document.body.classList.toggle('boosting', pv.boostTimer > 0);
 
@@ -862,6 +877,7 @@ class ApexDriftApp {
 
             const activeRace = this.mode === 'RACING';
             if (this.mode !== 'PAUSED') {
+                if (this.powerUps && activeRace) this.powerUps.update(dt, this.vehicles, this.raceClock);
                 for (const v of this.vehicles) {
                     v.update(dt, this.input, this.vehicles, activeRace, this.raceClock, this.sound);
                 }
