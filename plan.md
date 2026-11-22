@@ -6,6 +6,14 @@ Target the repository’s current `main` revision (`27d9a00` at planning time), 
 
 Implement the audit’s browser/client scope in reviewable stages: reliability, input/accessibility, tutorial and finite event progression, best-lap ghost replay, performance controls, verified install/offline behavior, and locally testable content extensions. Include a separate architecture proposal for future accounts/cloud saves and real cross-device multiplayer. Do **not** choose or provision a backend provider, add credentials, enable paid services, build account/matchmaking services, or claim the local `BroadcastChannel` rooms are online multiplayer. Those decisions require separate provider, security/privacy, operational-cost, and user approval.
 
+### Follow-up — interface, circuit, gameplay, and driving coherence
+
+Address the owner’s report that the interface still overlaps and that the UI/UX, maps, gameplay, and physics do not make sense. Prioritize a geometric layout fix for the fixed top-right quality/audio controls colliding with the driver-profile row at desktop and tablet widths, then browser-check the screenshot viewport (1517×686) and narrow mobile/tablet layouts. Keep every visible control reachable and prevent HUD/dialog clipping.
+
+Make circuit presentation and driving behavior internally consistent: fit minimaps/previews to each selected track’s actual sampled bounds without clipping or distorting shape; make track descriptions and scenery match the selected environment; orient roadside markers using track-local directions; and correct contradictory braking/reverse, boost, speed/velocity, steering, collision, boundary, and AI throttle behavior where deterministic tests can demonstrate a defect. Keep the existing arcade-racing style and content rather than rewriting the game or adding backend services.
+
+Use deterministic unit/regression checks for track transforms and motion/collision rules, then run the local production build in an interactive browser at desktop and mobile/tablet viewports. A live production test requires deployment of the reviewed commit; because pushing `main` triggers Cloudflare Pages, get separate explicit approval for that production push rather than treating local browser testing as proof of production behavior.
+
 ## Implementation approach
 
 Work incrementally against the existing Vite/Three.js application. Keep the current renderer and gameplay model. Extract testable browser-independent logic where useful; prefer small modules with explicit inputs over a rewrite. Add a lightweight test runner and deterministic coverage for profile/upgrades, event progression, ghost data, input state, and power-up behavior. Run existing production build and targeted tests after each delivery slice; do not suppress regressions or use browser automation as a substitute for unit-level tests.

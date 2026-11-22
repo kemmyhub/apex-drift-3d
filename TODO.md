@@ -36,7 +36,7 @@ Implementation follows the approved `plan.md`, based on current `main` at `27d9a
 
 ## 6. Genuine local Time Trial ghost
 
-- [ ] The `GHOST PB` label must only be shown when a working ghost is available; otherwise replace it with an honest personal-best label.
+- [x] The `GHOST PB` label must only be shown when a working ghost is available; otherwise replace it with an honest personal-best label. Ghost playback remains deferred; Time Trial and the garage now use `SOLO PB` and `Personal best` instead of implying a replay exists.
 - [ ] A new best valid lap may record a bounded track-relative position/heading sample sequence and replay it with interpolation as a non-colliding ghost.
 - [ ] Ghost records must be associated with compatible track/car/version metadata, limited to the best compatible lap, safely ignore corrupt/incompatible data, and respect local storage limits.
 - [ ] If deterministic replay cannot meet these conditions, defer ghost playback and retain honest best-lap timing without claiming a ghost.
@@ -71,7 +71,17 @@ Implementation follows the approved `plan.md`, based on current `main` at `27d9a
 - [ ] Explain responsibilities, data ownership, trust boundaries, anti-cheat/moderation, reconnects, privacy/security, deployment/operations, cost drivers, and staged alternatives.
 - [ ] Do not choose a provider, request or add secrets, provision services, change the static Cloudflare deployment, or implement accounts, cloud saves, internet matchmaking, or synchronized remote combat without separate explicit approval of provider, budget, and operational responsibilities.
 
-## 12. Final integration and delivery
+## 12. Interface, circuit, gameplay, and driving coherence
+
+- [ ] At the supplied 1517×686 desktop viewport and representative tablet/mobile widths, the fixed quality/audio controls must not overlap the career/driver-profile controls; all menu panels and race HUD/dialog controls must remain visible or reachable by scrolling without horizontal clipping.
+- [x] The selected circuit’s map preview/minimap must fit all sampled points and race markers inside its bounds, preserve the track’s aspect ratio, and update when the destination changes.
+- [x] Circuit descriptions and trackside environment must match the selected circuit; roadside boost markers must sit beside their boost pads in the local track direction, and repeated track builds must use repeatable scenery placement.
+- [x] Brake input must reduce forward speed without silently accelerating the car into reverse; reverse must only engage after the car reaches a stop while reverse is intentionally held. HUD speed and applied longitudinal motion must not contradict each other.
+- [x] Boost activation must not teleport speed to a high-speed floor while coasting or braking; steering, drifting, wall response, and car-to-car impacts must update position, heading, velocity, and displayed speed coherently and without pair-order-dependent overlap resolution.
+- [x] AI throttle and post-finish behavior must respect their intended throttle values, speed targets, and smooth steering rather than treating fractional throttle as full throttle.
+- [x] Run deterministic regression tests for map transforms and corrected motion/collision rules, then interactively test the built game in a browser at desktop and mobile/tablet viewport sizes. A production live test is complete only after an explicitly approved push and verified deployment; local browser testing must not be reported as production verification.
+
+## 13. Final integration and delivery
 
 - [ ] Preserve the current Vite/Three.js app and its existing features; implement reviewable increments instead of a full rewrite.
 - [ ] Update README/setup information to match only verified controls, modes, install/offline behavior, performance support, and multiplayer scope.

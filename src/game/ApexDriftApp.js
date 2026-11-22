@@ -12,6 +12,8 @@ import { getLocalStorageItem, setLocalStorageItem } from "../utils/storage.js";
 import { TutorialManager } from "./TutorialManager.js";
 import { GamepadInputController, ACTIONS as GAMEPAD_ACTIONS, mergeActionState } from "./InputController.js";
 import { DialogFocusManager } from "../utils/DialogFocusManager.js";
+import { createTrackMapProjection, projectTrackMapMarkers } from "./TrackMap.js";
+import { resolveVehicleCollisions } from "./VehicleCollisions.js";
 
 const THREE = window.THREE;
 
@@ -132,12 +134,12 @@ class ApexDriftApp {
             this.selectedTrackId = trackId;
             setLocalStorageItem("apex_track", trackId);
             const config = getTrackConfig(trackId);
-            this.updateTrackBrief();
             this.scene.background.setHex(config.skyColor);
             this.scene.fog.color.setHex(config.fogColor);
             this.scene.fog.density = config.fogDensity;
             this.track = new RaceTrack(this.scene, trackId);
             this.powerUps = new PowerUpManager(this.scene, this.track, message => { if (message) this.showToast(message); });
+            this.updateTrackBrief();
             this.buildPreviewShowcase();
             this.showToast(config.name + " selected");
         }
@@ -150,6 +152,11 @@ class ApexDriftApp {
             if (title) title.textContent = config.name;
             if (description) description.textContent = config.description;
             if (location) location.textContent = config.location.toUpperCase();
+            const mapCanvas = document.getElementById("track-preview-map");
+            if (mapCanvas && this.track) {
+                mapCanvas.setAttribute("aria-label", `${config.name} circuit map. The course is a closed three-lap circuit.`);
+                this.drawTrackMap(mapCanvas, false);
+            }
         }
 
         buildPreviewShowcase() {
@@ -402,7 +409,7 @@ class ApexDriftApp {
 
         refreshBestLapBadge() {
             const txt = isFinite(this.personalBestLap) ? this.formatTime(this.personalBestLap) : '--:--.--';
-            document.getElementById('best-lap-badge').textContent = `Best Lap: ${txt}`;
+            document.getElementById('best-lap-badge').textContent = `Personal best: ${txt}`;
         }
 
         refreshProfileUI() {
@@ -927,45 +934,94 @@ class ApexDriftApp {
 
         renderMinimap() {
             const canvas = document.getElementById('minimap-canvas');
-            const ctx = canvas.getContext('2d');
-            const w = canvas.width;
-            const h = canvas.height;
-            ctx.clearRect(0, 0, w, h);
+            this.drawTrackMap(canvas, true);
+        }
 
-            // Track bounds mapping (-60..290 X, -290..280 Z)
-            const mapX = x => ((x + 65) / 375) * (w - 24) + 12;
-            const mapY = z => ((z + 295) / 590) * (h - 24) + 12;
+        drawTrackMap(canvas, showVehicles) {
+            const ctx = canvas?.getContext('2d');
+            if (!ctx || !this.track?.curvePoints?.length) return;
+            const { width, height } = canvas;
+            const points = this.track.curvePoints;
+            const projection = createTrackMapProjection(points, width, height, 12, this.track.roadWidth / 2 + 5);
+            const project = point => projection.project(point.x, point.z);
+            ctx.clearRect(0, 0, width, height);
 
-            // Draw circuit loop
             ctx.beginPath();
-            this.track.curvePoints.forEach((pt, i) => {
-                if (i % 3 !== 0) return;
-                const px = mapX(pt.x);
-                const py = mapY(pt.z);
-                if (i === 0) ctx.moveTo(px, py);
-                else ctx.lineTo(px, py);
+            points.forEach((point, index) => {
+                if (index % 2 !== 0) return;
+                const mapped = project(point);
+                if (index === 0) ctx.moveTo(mapped.x, mapped.y);
+                else ctx.lineTo(mapped.x, mapped.y);
             });
             ctx.closePath();
-            ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
-            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = 'rgba(2, 8, 20, .96)';
+            ctx.lineWidth = Math.max(5, height * 0.12);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(110, 197, 225, .88)';
+            ctx.lineWidth = Math.max(1.5, height * 0.027);
             ctx.stroke();
 
-            // Start line dot
-            const startPt = this.track.curvePoints[0];
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(mapX(startPt.x) - 4, mapY(startPt.z) - 2, 8, 4);
+            const start = points[0];
+            const tangent = this.track.curve.getTangentAt(0).normalize();
+            const across = this.track.roadWidth / 2;
+            const roadRight = new THREE.Vector3(-tangent.z, 0, tangent.x);
+            const startLeft = start.clone().addScaledVector(roadRight, -across);
+            const startRight = start.clone().addScaledVector(roadRight, across);
+            const mappedLeft = project(startLeft);
+            const mappedRight = project(startRight);
+            ctx.beginPath();
+            ctx.moveTo(mappedLeft.x, mappedLeft.y);
+            ctx.lineTo(mappedRight.x, mappedRight.y);
+            ctx.strokeStyle = '#f8fafc';
+            ctx.lineWidth = Math.max(2, height * 0.045);
+            ctx.stroke();
 
-            // Draw vehicles
-            for (const v of this.vehicles) {
+            if (!showVehicles) return;
+            const markers = [
+                ...(this.track.boostPads || []).map((pad, index) => ({ type: 'boost', index, position: pad.position })),
+                ...(this.track.checkpoints || []).map(checkpoint => ({ type: 'checkpoint', index: checkpoint.index, position: checkpoint.position }))
+            ];
+            for (const marker of projectTrackMapMarkers(markers, projection)) {
                 ctx.beginPath();
-                ctx.arc(mapX(v.position.x), mapY(v.position.z), v.isPlayer ? 5 : 3.8, 0, Math.PI * 2);
-                ctx.fillStyle = v.isPlayer ? '#38bdf8' : v.colorHex;
+                if (marker.type === 'boost') {
+                    const size = Math.max(2.5, height * 0.035);
+                    ctx.moveTo(marker.x, marker.y - size);
+                    ctx.lineTo(marker.x + size, marker.y);
+                    ctx.lineTo(marker.x, marker.y + size);
+                    ctx.lineTo(marker.x - size, marker.y);
+                    ctx.closePath();
+                    ctx.fillStyle = '#22d3ee';
+                } else {
+                    ctx.arc(marker.x, marker.y, Math.max(2, height * 0.025), 0, Math.PI * 2);
+                    ctx.fillStyle = marker.index === this.playerVehicle?.nextCheckpoint ? '#facc15' : '#fb7185';
+                }
                 ctx.fill();
-                if (v.isPlayer) {
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            for (const vehicle of this.vehicles) {
+                const mapped = project(vehicle.position);
+                ctx.save();
+                ctx.translate(mapped.x, mapped.y);
+                ctx.rotate(vehicle.heading);
+                const size = vehicle.isPlayer ? 6 : 4.4;
+                ctx.beginPath();
+                ctx.moveTo(0, -size);
+                ctx.lineTo(size * 0.72, size * 0.72);
+                ctx.lineTo(0, size * 0.4);
+                ctx.lineTo(-size * 0.72, size * 0.72);
+                ctx.closePath();
+                ctx.fillStyle = vehicle.isPlayer ? '#42e8ff' : vehicle.colorHex;
+                ctx.fill();
+                if (vehicle.isPlayer) {
                     ctx.strokeStyle = '#ffffff';
                     ctx.lineWidth = 1.5;
                     ctx.stroke();
                 }
+                ctx.restore();
             }
         }
 
@@ -1039,6 +1095,8 @@ class ApexDriftApp {
                 for (const v of this.vehicles) {
                     v.update(dt, frameInput, this.vehicles, activeRace, this.raceClock, this.sound);
                 }
+                resolveVehicleCollisions(this.vehicles, () => this.sound.playBump());
+                for (const v of this.vehicles) v.syncMeshTransform(0);
             }
 
             // Broadcast local player telemetry in Multiplayer mode

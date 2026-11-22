@@ -15,7 +15,7 @@ const TRACK_CATALOG = [
     {
         id: "alpine-pass",
         name: "ALPINE PASS",
-        location: "Mountain Sprint Circuit",
+        location: "Alpine Loop Circuit",
         description: "A technical mountain loop with tight switchbacks and quick direction changes.",
         roadWidth: 22,
         groundColor: 0x34433d,

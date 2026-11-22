@@ -1,5 +1,6 @@
 const THREE = window.THREE;
 import { getTrackConfig } from "./TrackCatalog.js";
+import { createSeededRandom } from "./TrackRandom.js";
 
 class RaceTrack {
         constructor(scene, trackId = "neon-coast") {
@@ -20,6 +21,7 @@ class RaceTrack {
 
             this.curve = new THREE.CatmullRomCurve3(controlPoints, true, 'catmullrom', 0.5);
             this.curvePoints = this.curve.getSpacedPoints(this.samples);
+            this.length = this.curve.getLength();
 
             // Ground terrain
             const groundGeo = new THREE.PlaneGeometry(1400, 1400);
@@ -225,6 +227,7 @@ class RaceTrack {
             boostTs.forEach(t => {
                 const pt = this.curve.getPointAt(t);
                 const tangent = this.curve.getTangentAt(t).normalize();
+                const roadRight = new THREE.Vector3(-tangent.z, 0, tangent.x);
                 const angle = Math.atan2(tangent.x, tangent.z);
 
                 const mesh = new THREE.Mesh(padGeo, padMat);
@@ -236,9 +239,12 @@ class RaceTrack {
                 // Side neon beacons
                 const beaconGeo = new THREE.BoxGeometry(0.4, 1.2, 0.4);
                 const beaconMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-                const b1 = new THREE.Mesh(beaconGeo, beaconMat);
-                b1.position.set(pt.x + 3.2, 0.6, pt.z);
-                this.group.add(b1);
+                [-1, 1].forEach(side => {
+                    const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+                    const beaconPosition = pt.clone().addScaledVector(roadRight, side * 4.2);
+                    beacon.position.set(beaconPosition.x, 0.6, beaconPosition.z);
+                    this.group.add(beacon);
+                });
 
                 this.boostPads.push({ position: pt, radius: 4.5, mesh });
             });
@@ -334,32 +340,53 @@ class RaceTrack {
             });
 
             // Distinct trackside trees, instanced through shared geometry and materials.
+            const random = createSeededRandom(this.trackId);
             const trunkGeo = new THREE.CylinderGeometry(0.38, 0.58, 3.2, 6);
             const trunkMat = new THREE.MeshStandardMaterial({ color: 0x594232 });
             const leavesGeo = new THREE.ConeGeometry(3.1, 8.2, 7);
             const leavesMat = new THREE.MeshStandardMaterial({ color: this.config.treeColor, roughness: 0.84 });
+            const cactusTrunkGeo = new THREE.CylinderGeometry(0.58, 0.76, 5.8, 7);
+            const cactusArmGeo = new THREE.CylinderGeometry(0.22, 0.28, 2.5, 6);
+            const cactusMat = new THREE.MeshStandardMaterial({ color: 0x648247, roughness: 0.92 });
+            const desert = this.trackId === "desert-run";
+            const vegetationCount = desert ? 28 : this.trackId === "alpine-pass" ? 92 : 112;
             let placed = 0;
             let attempts = 0;
-            while (placed < 115 && attempts < 1100) {
+            while (placed < vegetationCount && attempts < 1100) {
                 attempts++;
-                const candidate = new THREE.Vector3((Math.random() - 0.5) * 780, 0, (Math.random() - 0.5) * 780);
+                const candidate = new THREE.Vector3((random() - 0.5) * 780, 0, (random() - 0.5) * 780);
                 let tooClose = false;
                 for (let i = 0; i < this.curvePoints.length; i += 4) {
                     if (candidate.distanceToSquared(this.curvePoints[i]) < 32 * 32) { tooClose = true; break; }
                 }
                 if (tooClose) continue;
                 const tree = new THREE.Group();
-                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-                trunk.position.y = 1.6;
-                trunk.castShadow = true;
-                tree.add(trunk);
-                const crown = new THREE.Mesh(leavesGeo, leavesMat);
-                crown.position.y = 6.2;
-                crown.castShadow = true;
-                tree.add(crown);
-                const scale = 0.78 + Math.random() * 0.8;
+                if (desert) {
+                    const cactus = new THREE.Mesh(cactusTrunkGeo, cactusMat);
+                    cactus.position.y = 2.9;
+                    cactus.castShadow = true;
+                    tree.add(cactus);
+                    const leftArm = new THREE.Mesh(cactusArmGeo, cactusMat);
+                    leftArm.position.set(-0.72, 2.7, 0);
+                    leftArm.rotation.z = -0.62;
+                    tree.add(leftArm);
+                    const rightArm = leftArm.clone();
+                    rightArm.position.x = 0.72;
+                    rightArm.rotation.z = 0.62;
+                    tree.add(rightArm);
+                } else {
+                    const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                    trunk.position.y = 1.6;
+                    trunk.castShadow = true;
+                    tree.add(trunk);
+                    const crown = new THREE.Mesh(leavesGeo, leavesMat);
+                    crown.position.y = 6.2;
+                    crown.castShadow = true;
+                    tree.add(crown);
+                }
+                const scale = 0.78 + random() * 0.8;
                 tree.scale.set(scale, scale, scale);
-                tree.rotation.y = Math.random() * Math.PI;
+                tree.rotation.y = random() * Math.PI;
                 tree.position.copy(candidate);
                 this.group.add(tree);
                 placed++;

@@ -872,3 +872,36 @@ input, textarea { user-select: text; -webkit-user-select: text; }
   .tutorial-backdrop { align-items:flex-start; }
   .tutorial-modal { margin-top:auto; margin-bottom:auto; padding:20px; }
 }
+
+
+/* Keep the menu header clear of the fixed quality/audio controls. */
+@media (min-width:641px) {
+  #ui-main-menu > .pointer-events-auto:first-child { padding-right:220px; }
+}
+@media (min-width:641px) and (max-width:900px) {
+  #ui-main-menu > .pointer-events-auto:first-child { padding-right:0; padding-top:54px; }
+  #ui-main-menu > .pointer-events-auto:first-child > div:last-child { align-self:flex-end; }
+}
+.track-brief-layout {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(110px, 34%);
+  align-items:center;
+  gap:12px;
+}
+#track-preview-map {
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:8/5;
+  border:1px solid rgba(116,211,241,.22);
+  border-radius:10px;
+  background:rgba(2,8,20,.78);
+}
+@media (max-width:380px) {
+  .track-brief-layout { grid-template-columns:minmax(0,1fr); gap:8px; }
+  #track-preview-map { aspect-ratio:3/1; }
+}
+
+@media (max-width:640px) {
+  #driver-profile-controls > div > label { flex:0 0 auto; white-space:nowrap; }
+}

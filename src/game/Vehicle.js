@@ -1,5 +1,5 @@
 import { CAR_MODELS } from "./carCatalog.js";
-import { getLateralRetention } from "./VehiclePhysics.js";
+import { applyTrackBoundaryResponse, getLateralRetention, getSteeringRate, stepLongitudinalSpeed } from "./VehiclePhysics.js";
 
 const THREE = window.THREE;
 
@@ -301,10 +301,9 @@ class Vehicle {
                     drift = aiCtrl.drift;
                 }
             } else if (this.finished) {
-                // Gentle AI cruise after crossing finish line
-                const aiCtrl = this.computeAIControls();
-                throttle = aiCtrl.throttle * 0.55;
-                steer = aiCtrl.steer;
+                // Finished cars coast rather than continuing to accelerate at race pace.
+                throttle = 0;
+                steer = 0;
             }
 
             if (this.stunTimer > 0) {
@@ -322,46 +321,36 @@ class Vehicle {
                 this.nitroCharge = Math.min(100, this.nitroCharge + dt * (8 + Math.abs(this.speed) * 0.12));
                 this.driftScore += Math.round(dt * Math.abs(this.speed) * 3.2);
             }
-            if (this.isPlayer && input.boost && this.nitroCharge >= 25 && this.boostTimer <= 0.12) {
+            if (this.isPlayer && input.boost && this.speed > 12 && this.nitroCharge >= 25 && this.boostTimer <= 0.12) {
                 this.nitroCharge = Math.max(0, this.nitroCharge - 25); this.boostTimer = this.carSpec.nitroDuration || 1.45; sound.playBoost();
             }
             const boostMultiplier = this.boostTimer > 0 ? 1.34 : 1.0;
-            const effectiveMaxSpeed = this.carSpec.maxSpeed * boostMultiplier * (this.isAI ? this.aiSkill : 1.0);
-
-            // Acceleration / Braking
-            if (throttle > 0) {
-                this.speed += this.carSpec.accelForce * boostMultiplier * dt;
-            } else if (throttle < 0) {
-                this.speed -= this.carSpec.accelForce * 1.35 * dt;
-            } else {
-                // Natural rolling resistance
-                this.speed *= Math.pow(0.45, dt);
-            }
-
-            if (this.boostTimer > 0) {
-                this.speed = Math.max(this.speed, effectiveMaxSpeed * 0.92);
-            }
-
-            this.speed = THREE.MathUtils.clamp(this.speed, -26, effectiveMaxSpeed);
+            const aiPace = this.isAI ? this.aiSkill : 1;
+            this.speed = stepLongitudinalSpeed({
+                speed: this.speed,
+                throttle,
+                dt,
+                accelForce: this.carSpec.accelForce,
+                maxSpeed: this.carSpec.maxSpeed * aiPace,
+                maxReverseSpeed: 18,
+                boostMultiplier
+            });
 
             // Steering & Arcade Drift Dynamics
             this.isDrifting = drift && Math.abs(this.speed) > 24 && Math.abs(steer) > 0.1;
-            const turnMultiplier = this.isDrifting ? 1.38 : 1.0;
             const speedTurnFactor = THREE.MathUtils.clamp(Math.abs(this.speed) / 22, 0, 1);
             const reverseSign = this.speed >= -0.5 ? 1 : -1;
 
-            this.heading += steer * this.carSpec.turnRate * turnMultiplier * speedTurnFactor * reverseSign * dt;
+            this.heading += steer * getSteeringRate(this.speed, this.carSpec.turnRate, this.isDrifting) * reverseSign * dt;
 
             // Lateral grip vs drift slide
             const forward = new THREE.Vector3(Math.sin(this.heading), 0, Math.cos(this.heading));
             const right = new THREE.Vector3(Math.cos(this.heading), 0, -Math.sin(this.heading));
-            const longitudinal = this.velocity.dot(forward);
             const lateral = this.velocity.dot(right);
-            const targetLongitudinal = this.speed;
             const lateralRetention = getLateralRetention(this.isDrifting, this.carSpec.grip, dt);
             const lateralAcceleration = steer * Math.abs(this.speed) * (this.isDrifting ? 0.42 : 0.13);
             const nextLateral = lateral * lateralRetention + lateralAcceleration * dt;
-            const nextLongitudinal = THREE.MathUtils.lerp(longitudinal, targetLongitudinal, Math.min(1, (this.isDrifting ? 3.2 : 10.5) * dt));
+            const nextLongitudinal = this.speed;
             this.velocity.copy(forward).multiplyScalar(nextLongitudinal).addScaledVector(right, nextLateral);
 
             // Apply velocity with inertia, grip and a controllable drift angle
@@ -375,9 +364,6 @@ class Vehicle {
             // Track Boundary Collision & Boost Pad Detection
             this.handleTrackCollisions(sound);
 
-            // Car-to-Car Arcade Elastic Collision
-            this.handleCarCollisions(allVehicles, sound);
-
             // Lap & Checkpoint Progression
             if (raceActive && !this.finished) {
                 this.updateLapProgress(raceClock);
@@ -390,7 +376,9 @@ class Vehicle {
 
         computeAIControls() {
             const info = this.track.getClosestTrackInfo(this.position);
-            const lookAheadT = (info.t + 0.032) % 1;
+            const lookAheadDistance = THREE.MathUtils.clamp(28 + Math.abs(this.speed) * 0.65, 28, 90);
+            const trackLength = this.track.length || this.track.curve.getLength();
+            const lookAheadT = (info.t + lookAheadDistance / trackLength) % 1;
             const targetPt = this.track.curve.getPointAt(lookAheadT);
             const tangent = this.track.curve.getTangentAt(lookAheadT).normalize();
             const right = new THREE.Vector3(-tangent.z, 0, tangent.x);
@@ -414,18 +402,15 @@ class Vehicle {
 
         handleTrackCollisions(sound) {
             const info = this.track.getClosestTrackInfo(this.position);
-            const maxAllowedDist = (this.track.roadWidth / 2) + 1.1;
+            const maxAllowedDist = Math.max(0.5, this.track.roadWidth / 2 - 1.05);
+            const boundary = applyTrackBoundaryResponse(this.position, this.velocity, info.point, maxAllowedDist);
 
-            if (info.distance > maxAllowedDist) {
-                // Push car smoothly back inside guardrails
-                const pushDir = info.point.clone().sub(this.position).setY(0).normalize();
-                const penetration = info.distance - maxAllowedDist;
-                this.position.addScaledVector(pushDir, penetration);
-
-                // Dampen speed slightly on wall scrape
-                this.speed *= 0.92;
-                this.velocity.multiplyScalar(0.9);
-                if (this.isPlayer && penetration > 0.35 && Math.abs(this.speed) > 20) {
+            if (boundary) {
+                this.position.set(boundary.position.x, this.position.y, boundary.position.z);
+                this.velocity.set(boundary.velocity.x, 0, boundary.velocity.z);
+                const forward = new THREE.Vector3(Math.sin(this.heading), 0, Math.cos(this.heading));
+                this.speed = this.velocity.dot(forward);
+                if (this.isPlayer && boundary.penetration > 0.35 && Math.abs(this.speed) > 20) {
                     sound.playBump();
                 }
             }
@@ -435,25 +420,6 @@ class Vehicle {
                 if (this.position.distanceToSquared(pad.position) < pad.radius * pad.radius) {
                     if (this.boostTimer < 0.8 && this.isPlayer) { sound.playBoost(); this.nitroCharge = Math.min(100, this.nitroCharge + 12); }
                     this.boostTimer = 1.65;
-                }
-            }
-        }
-
-        handleCarCollisions(allVehicles, sound) {
-            const minSep = 2.8;
-            for (const other of allVehicles) {
-                if (other === this) continue;
-                const diff = this.position.clone().sub(other.position).setY(0);
-                const dist = diff.length();
-                if (dist > 0.001 && dist < minSep) {
-                    const overlap = (minSep - dist) * 0.5;
-                    const normal = diff.normalize();
-                    this.position.addScaledVector(normal, overlap);
-                    if (!other.isRemote) {
-                        other.position.addScaledVector(normal, -overlap);
-                    }
-                    this.speed *= 0.95;
-                    if (this.isPlayer) sound.playBump();
                 }
             }
         }
