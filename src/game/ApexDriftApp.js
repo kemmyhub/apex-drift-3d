@@ -58,7 +58,7 @@ class ApexDriftApp {
             this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, powerPreference: 'high-performance' });
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             this.graphicsModes = ['ULTRA', 'HIGH', 'PERFORMANCE'];
-            this.graphicsMode = localStorage.getItem('apex_graphics') || 'ULTRA';
+            this.graphicsMode = localStorage.getItem('apex_graphics') || (window.matchMedia('(max-width: 768px)').matches ? 'HIGH' : 'ULTRA');
             if (!this.graphicsModes.includes(this.graphicsMode)) this.graphicsMode = 'ULTRA';
             this.renderer.outputEncoding = THREE.sRGBEncoding;
             this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
