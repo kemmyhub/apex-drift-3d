@@ -86,6 +86,7 @@ class ApexDriftApp {
             this.scene.fog = new THREE.FogExp2(0x0c192c, 0.0022);
 
             this.camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.5, 950);
+            this.cameraRaycaster = new THREE.Raycaster();
             this.camera.position.set(0, 12, 22);
 
             // Studio + Golden Hour Daylight Lighting
@@ -1054,11 +1055,27 @@ class ApexDriftApp {
                 .addScaledVector(backVec, chaseDist)
                 .add(new THREE.Vector3(0, chaseHeight, 0));
 
-            this.camera.position.lerp(desiredPos, Math.min(1, dt * 10));
-
             const lookTarget = pv.position.clone()
                 .addScaledVector(backVec, -6)
                 .add(new THREE.Vector3(0, 1.3, 0));
+
+            // Keep the chase camera out of grandstands, barriers and scenery.
+            // Raycast only against the current track so the car itself cannot occlude it.
+            if (this.track?.group && this.cameraRaycaster) {
+                const cameraRay = desiredPos.clone().sub(lookTarget);
+                const cameraDistance = cameraRay.length();
+                if (cameraDistance > 0.01) {
+                    cameraRay.normalize();
+                    this.cameraRaycaster.set(lookTarget, cameraRay);
+                    this.cameraRaycaster.near = 0.15;
+                    this.cameraRaycaster.far = cameraDistance;
+                    const obstruction = this.cameraRaycaster.intersectObject(this.track.group, true)[0];
+                    if (obstruction) {
+                        desiredPos.copy(obstruction.point).addScaledVector(cameraRay, -0.7);
+                    }
+                }
+            }
+            this.camera.position.lerp(desiredPos, Math.min(1, dt * 10));
             this.camera.lookAt(lookTarget);
         }
 
