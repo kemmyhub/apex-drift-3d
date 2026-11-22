@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#070b14">
+  <meta name="description" content="APEX DRIFT 3D. An arcade racing game.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/apex-icon.svg" type="image/svg+xml">
+  <title>APEX DRIFT 3D</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,system-ui,sans-serif}*{box-sizing:border-box}body{margin:0;overflow:hidden;background:#070b14;color:#fff}canvas{display:block}#hud{position:fixed;inset:0;pointer-events:none;padding:clamp(14px,3vw,32px);display:flex;justify-content:space-between;align-items:flex-start;text-shadow:0 2px 12px #000}#brand{font-weight:900;letter-spacing:.18em;font-size:clamp(13px,2vw,20px)}#brand span{color:#fb4567}#stats{text-align:right}#speed{font-size:clamp(38px,8vw,72px);font-weight:900;line-height:1}#unit{font-size:10px;letter-spacing:.25em;color:#94a3b8}#lap{margin-top:12px;font-size:13px;color:#cbd5e1}#help{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:.13em;color:#cbd5e1;background:#07111dcc;border:1px solid #ffffff22;padding:10px 16px;border-radius:30px;white-space:nowrap;pointer-events:none}#start{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(120deg,#050914dd,#101b2acc);z-index:3}#panel{width:min(90vw,470px);padding:34px;border:1px solid #ffffff22;border-radius:22px;background:#08111deF;box-shadow:0 25px 100px #0009;text-align:center}h1{font-size:clamp(30px,7vw,52px);font-style:italic;line-height:.95;margin:0 0 12px;letter-spacing:-.05em}h1 span{color:#fb4567}p{color:#aab6c8;line-height:1.6;font-size:14px}button{border:0;background:#fb4567;color:#fff;font-weight:900;letter-spacing:.15em;padding:15px 28px;border-radius:10px;cursor:pointer;margin-top:14px}#touch{position:fixed;bottom:62px;left:0;right:0;display:none;justify-content:space-between;padding:0 22px;pointer-events:none}#touch button{pointer-events:auto;background:#0c1728bb;border:1px solid #ffffff44;border-radius:50%;width:64px;height:64px;padding:0;font-size:22px;touch-action:none}@media(max-width:700px){#touch{display:flex}#help{bottom:140px;font-size:9px}}
+  </style>
+</head>
+<body>
+  <div id="hud"><div><div id="brand">APEX <span>DRIFT</span> 3D</div><div id="lap">ARCADE RUN · ENDLESS CIRCUIT</div></div><div id="stats"><div id="speed">000</div><div id="unit">KM/H</div><div id="lap">DISTANCE <b id="distance">0</b> M</div></div></div>
+  <div id="help">W / ↑ ACCELERATE · S / ↓ BRAKE · A D / ← → STEER · SPACE DRIFT</div>
+  <div id="touch"><button id="left">◀</button><button id="brake">▼</button><button id="gas">▲</button><button id="right">▶</button></div>
+  <div id="start"><div id="panel"><h1>OWN THE<br><span>APEX.</span></h1><p>Drop into the circuit, build speed and slide through the corners. Your run starts when you do.</p><button id="play">START ENGINE</button><p style="font-size:11px">Best played in landscape on mobile or with a keyboard.</p></div></div>
+  <script>
+  (() => {
+    const scene=new THREE.Scene();scene.background=new THREE.Color(0x07111d);scene.fog=new THREE.Fog(0x07111d,45,180);
+    const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,500);
+    const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(renderer.domElement);
+    scene.add(new THREE.HemisphereLight(0x9bcaff,0x17202b,1.2));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(-25,40,20);sun.castShadow=true;scene.add(sun);
+    const mat=(color,roughness=.7,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
+    const ground=new THREE.Mesh(new THREE.PlaneGeometry(500,500),mat(0x17251f));ground.rotation.x=-Math.PI/2;ground.position.y=-.15;ground.receiveShadow=true;scene.add(ground);
+    const roadMat=mat(0x242a34),lineMat=mat(0xf5f5f5),redMat=mat(0xfb4567),blueMat=mat(0x20b9ed);
+    const road=new THREE.Mesh(new THREE.RingGeometry(23,34,160),roadMat);road.rotation.x=-Math.PI/2;road.position.y=.02;scene.add(road);
+    const inner=new THREE.Mesh(new THREE.CircleGeometry(22.8,160),mat(0x1c3027));inner.rotation.x=-Math.PI/2;inner.position.y=-.02;scene.add(inner);
+    const outer=new THREE.Mesh(new THREE.RingGeometry(34.2,34.6,160),redMat);outer.rotation.x=-Math.PI/2;outer.position.y=.08;scene.add(outer);
+    for(let i=0;i<64;i++){const a=i/64*Math.PI*2;const x=Math.cos(a)*28.5,z=Math.sin(a)*28.5;const dash=new THREE.Mesh(new THREE.BoxGeometry(.22,.04,1.1),lineMat);dash.position.set(x,.08,z);dash.rotation.y=-a;scene.add(dash);}
+    for(let i=0;i<36;i++){const a=i/36*Math.PI*2;const x=Math.cos(a)*43,z=Math.sin(a)*43;const h=1.2+Math.random()*2.5;const pillar=new THREE.Mesh(new THREE.BoxGeometry(1,h,1),i%3?mat(0x26384a):blueMat);pillar.position.set(x,h/2,z);pillar.castShadow=true;scene.add(pillar);}
+    function makeCar(color){const g=new THREE.Group();const body=new THREE.Mesh(new THREE.BoxGeometry(2.1,.62,4),mat(color,.28,.55));body.position.y=.75;body.castShadow=true;g.add(body);const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.55,.62,1.8),mat(0x101b2b,.18,.4));cabin.position.set(0,1.32,-.15);g.add(cabin);const glass=new THREE.Mesh(new THREE.BoxGeometry(1.58,.36,.12),mat(0x8ad8f5,.12,.3));glass.position.set(0,1.34,.78);g.add(glass);for(const x of [-1,1])for(const z of [-1.25,1.25]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.28,16),mat(0x090b10));w.rotation.z=Math.PI/2;w.position.set(x*1.08,.42,z);g.add(w);}for(const x of [-.68,.68]){const lamp=new THREE.Mesh(new THREE.BoxGeometry(.38,.16,.08),mat(0xfff2c2,.2));lamp.position.set(x,.85,2.02);g.add(lamp);}return g;}
+    const car=makeCar(0xfb4567);scene.add(car);const rival=makeCar(0x20b9ed);scene.add(rival);
+    const keys={};let running=false,speed=0,steer=0,angle=0,distance=0,drift=false,last=performance.now();
+    const center=(a,r)=>new THREE.Vector3(Math.cos(a)*r,.0,Math.sin(a)*r);
+    let playerAngle=0,off=0;
+    function setKey(k,v){keys[k]=v;}addEventListener('keydown',e=>{setKey(e.code,true);if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();});addEventListener('keyup',e=>setKey(e.code,false));
+    const bind=(id,key)=>{const el=document.getElementById(id);el.addEventListener('pointerdown',e=>{e.preventDefault();setKey(key,true)});['pointerup','pointerleave','pointercancel'].forEach(n=>el.addEventListener(n,()=>setKey(key,false)));};bind('left','ArrowLeft');bind('right','ArrowRight');bind('gas','ArrowUp');bind('brake','ArrowDown');
+    document.getElementById('play').onclick=()=>{running=true;document.getElementById('start').style.display='none';};
+    function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.04);last=now;if(running){const accel=keys.ArrowUp||keys.KeyW,brake=keys.ArrowDown||keys.KeyS,left=keys.ArrowLeft||keys.KeyA,right=keys.ArrowRight||keys.KeyD;drift=!!keys.Space;speed+=accel?24*dt:0;speed-=brake?42*dt:10*dt;speed=Math.max(0,Math.min(speed,drift?62:88));const steerInput=(right?1:0)-(left?1:0);steer+=(steerInput-steer)*Math.min(1,dt*7);playerAngle+=steer*(.35+speed/70)*dt*(drift?1.45:1);off+=(drift?steer*.22:-off*2.4)*dt;off=Math.max(-7,Math.min(7,off));distance+=speed*dt*.2778;const p=center(playerAngle,28.5+off);car.position.set(p.x,0,p.z);car.rotation.y=-playerAngle+Math.PI/2-steer*.18;const rp=center(playerAngle+Math.PI*.75,28.5);rival.position.set(rp.x,0,rp.z);rival.rotation.y=-(playerAngle+Math.PI*.75)+Math.PI/2;document.getElementById('speed').textContent=String(Math.round(speed*2.15)).padStart(3,'0');document.getElementById('distance').textContent=Math.floor(distance).toLocaleString();}const target=car.position.clone().add(new THREE.Vector3(-Math.sin(playerAngle)*10,7,-Math.cos(playerAngle)*10));camera.position.lerp(target,.08);camera.lookAt(car.position.x,1,car.position.z);renderer.render(scene,camera);}
+    addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});requestAnimationFrame(animate);
+    if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(console.warn));
+  })();
+  </script>
+</body>
+</html>
