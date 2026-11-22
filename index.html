@@ -19,7 +19,7 @@
     <canvas id="game-canvas"></canvas>
 
     <!-- Global Top-Right Controls (Audio Mute + Quick Exit) -->
-    <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
+    <div id="global-controls" class="fixed top-4 right-4 z-50 flex items-center gap-2">
         <button id="btn-pause-race" class="hidden glass-panel px-3.5 py-2 rounded-xl text-xs font-bold tracking-wider uppercase text-cyan-200 hover:bg-cyan-500/20 border border-cyan-400/30 transition cursor-pointer">Ⅱ Pause</button>
         <button id="btn-exit-race" class="hidden glass-panel px-3.5 py-2 rounded-xl text-xs font-bold tracking-wider uppercase text-rose-400 hover:bg-rose-500/20 border border-rose-500/30 transition cursor-pointer">
             ✕ Quit Race
@@ -52,7 +52,7 @@
             </div>
 
             <!-- Driver Profile Input -->
-            <div class="flex items-center gap-2 self-start sm:self-auto">
+            <div id="driver-profile-controls" class="flex items-center gap-2 self-start sm:self-auto">
             <button id="btn-open-career" class="glass-panel px-4 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider text-cyan-200 hover:text-white">Career <span class="text-white/60">↗</span></button>
             <div class="glass-panel px-4 py-2.5 rounded-2xl flex items-center gap-3">
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Driver</span>
