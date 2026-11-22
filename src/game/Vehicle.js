@@ -81,17 +81,72 @@ class Vehicle {
             // Sculpted Cabin
             const cabinWidth = this.carSpec.bodyStyle === 'prototype' ? 1.5 : 1.75;
             const cabin = new THREE.Mesh(new THREE.BoxGeometry(cabinWidth, 0.58, 2.1), glassMat);
-            cabin.position.set(0, 1.18, -0.15);
+            cabin.position.set(0, style === "prototype" ? 1.12 : 1.18, style === "prototype" ? -0.12 : -0.15);
+            cabin.scale.set(1, style === "prototype" ? 0.82 : style === "tuner" ? 1.06 : 1, style === "prototype" ? 1.12 : 1);
             cabin.castShadow = true;
             root.add(cabin);
+
+            // Slanted front and rear glass planes break up the cabin box silhouette.
+            const glassAccent = new THREE.MeshStandardMaterial({ color: 0x071827, metalness: 0.72, roughness: 0.12, transparent: true, opacity: 0.78 });
+            const windscreen = new THREE.Mesh(new THREE.BoxGeometry(cabinWidth * 0.9, 0.055, 0.62), glassAccent);
+            windscreen.position.set(0, 1.38, 0.68);
+            windscreen.rotation.x = -0.24;
+            root.add(windscreen);
+            const rearGlass = new THREE.Mesh(new THREE.BoxGeometry(cabinWidth * 0.86, 0.05, 0.5), glassAccent);
+            rearGlass.position.set(0, 1.38, -0.98);
+            rearGlass.rotation.x = 0.2;
+            root.add(rearGlass);
 
             // Roof panel
             const roof = new THREE.Mesh(new THREE.BoxGeometry(cabinWidth * 0.96, 0.08, 1.4), paintMat);
             roof.position.set(0, 1.49, -0.2);
             root.add(roof);
 
+            // Long sculpted bonnet and rear haunches give each chassis a stronger silhouette.
+            const style = this.carSpec.bodyStyle || "coupe";
+            const bonnet = new THREE.Mesh(
+                new THREE.BoxGeometry(style === "prototype" ? 1.82 : 1.92, 0.2, style === "tuner" ? 1.48 : 1.7),
+                paintMat
+            );
+            bonnet.position.set(0, 0.91, 1.18);
+            bonnet.castShadow = true;
+            root.add(bonnet);
+
+            const rearDeck = new THREE.Mesh(
+                new THREE.BoxGeometry(style === "prototype" ? 1.9 : 2.02, 0.2, 0.78),
+                paintMat
+            );
+            rearDeck.position.set(0, 0.91, -1.68);
+            root.add(rearDeck);
+
+            // Wide fender shoulders and low front air intakes.
+            [-1, 1].forEach(side => {
+                const shoulder = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.22, 0.28, style === "prototype" ? 2.25 : 2.55),
+                    paintMat
+                );
+                shoulder.position.set(side * 1.02, 0.72, -0.02);
+                root.add(shoulder);
+                const intake = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.3, 0.72), trimMat);
+                intake.position.set(side * 0.78, 0.52, 2.18);
+                root.add(intake);
+            });
+
+            // Rear diffuser fins and a front splitter accent.
+            for (let fin = -1; fin <= 1; fin++) {
+                const diffuserFin = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.62), carbonMat);
+                diffuserFin.position.set(fin * 0.48, 0.27, -2.18);
+                root.add(diffuserFin);
+            }
+            const bonnetStripe = new THREE.Mesh(
+                new THREE.BoxGeometry(style === "prototype" ? 0.16 : 0.1, 0.025, 1.22),
+                accentMat
+            );
+            bonnetStripe.position.set(0, 1.02, 1.18);
+            root.add(bonnetStripe);
+
             // Rear Spoiler Wing
-            const wing = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.1, 0.48), darkMat);
+            const wing = new THREE.Mesh(new THREE.BoxGeometry(style === "tuner" ? 2.55 : 2.15, style === "prototype" ? 0.08 : 0.12, style === "prototype" ? 0.34 : 0.48), darkMat);
             wing.position.set(0, 1.24, -1.95);
             wing.castShadow = true;
             root.add(wing);
@@ -114,6 +169,14 @@ class Vehicle {
                 tl.position.set(x, 0.72, -2.21);
                 root.add(tl);
             });
+
+            // Full-width signature LED lighting for stronger readability at speed.
+            const frontBar = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.075, 0.06), headMat);
+            frontBar.position.set(0, 0.76, 2.23);
+            root.add(frontBar);
+            const rearBar = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.09, 0.06), tailMat);
+            rearBar.position.set(0, 0.77, -2.23);
+            root.add(rearBar);
 
             // Sculpted aero details, vents, side skirts and front splitter
             const trimMat = new THREE.MeshStandardMaterial({ color: 0x080d18, metalness: 0.72, roughness: 0.28 });
