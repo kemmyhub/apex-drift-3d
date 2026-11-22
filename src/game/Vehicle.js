@@ -1,3 +1,5 @@
+import { CAR_MODELS } from "./carCatalog.js";
+
 const THREE = window.THREE;
 
 class Vehicle {
