@@ -245,66 +245,146 @@ class RaceTrack {
         }
 
         buildScenery() {
-            // Grandstands near start/finish straight
-            const standMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 });
-            const roofMat = new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.4 });
-            [-32, -75].forEach(zPos => {
-                const stand = new THREE.Group();
-                const base = new THREE.Mesh(new THREE.BoxGeometry(12, 8, 34), standMat);
-                base.position.y = 4;
-                base.castShadow = true;
-                base.receiveShadow = true;
-                stand.add(base);
+            // Shared trackside materials keep the detailed environment inexpensive.
+            const asphaltShoulderMat = new THREE.MeshStandardMaterial({ color: 0x343b48, roughness: 0.94 });
+            const railMat = new THREE.MeshStandardMaterial({ color: 0x9aa9bb, metalness: 0.78, roughness: 0.28 });
+            const darkMat = new THREE.MeshStandardMaterial({ color: 0x101827, metalness: 0.55, roughness: 0.38 });
+            const cyanGlow = new THREE.MeshBasicMaterial({ color: 0x42e8ff });
+            const warmGlow = new THREE.MeshBasicMaterial({ color: 0xffc47a });
+            const boardMat = new THREE.MeshStandardMaterial({ color: 0x10223d, emissive: 0x06365a, emissiveIntensity: 0.65, metalness: 0.45 });
+            const lampGeo = new THREE.CylinderGeometry(0.09, 0.14, 7.5, 8);
+            const lampHeadGeo = new THREE.BoxGeometry(1.2, 0.18, 0.42);
+            const railGeo = new THREE.BoxGeometry(0.22, 0.7, 8);
+            const postGeo = new THREE.BoxGeometry(0.22, 1.1, 0.22);
 
-                const roof = new THREE.Mesh(new THREE.BoxGeometry(15, 0.8, 36), roofMat);
-                roof.position.set(-1.5, 9.5, 0);
+            // More convincing safety barriers, reflective posts and illuminated circuit furniture.
+            for (let i = 5; i < this.samples; i += 14) {
+                const t = i / this.samples;
+                const pt = this.curve.getPointAt(t);
+                const tangent = this.curve.getTangentAt(t).normalize();
+                const right = new THREE.Vector3(-tangent.z, 0, tangent.x);
+                const angle = Math.atan2(tangent.x, tangent.z);
+                [-1, 1].forEach((side, sideIndex) => {
+                    const edge = pt.clone().addScaledVector(right, side * (this.roadWidth / 2 + 4.6));
+                    const rail = new THREE.Mesh(railGeo, railMat);
+                    rail.position.set(edge.x, 1.05, edge.z);
+                    rail.rotation.y = angle;
+                    rail.castShadow = true;
+                    this.group.add(rail);
+                    const post = new THREE.Mesh(postGeo, darkMat);
+                    post.position.set(edge.x, 0.58, edge.z);
+                    post.rotation.y = angle;
+                    this.group.add(post);
+                    if (i % 28 === 5) {
+                        const polePos = pt.clone().addScaledVector(right, side * (this.roadWidth / 2 + 9));
+                        const pole = new THREE.Mesh(lampGeo, darkMat);
+                        pole.position.set(polePos.x, 3.7, polePos.z);
+                        this.group.add(pole);
+                        const arm = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.12, 0.12), darkMat);
+                        arm.position.set(polePos.x - side * 0.9, 7.25, polePos.z);
+                        arm.rotation.y = angle;
+                        this.group.add(arm);
+                        const head = new THREE.Mesh(lampHeadGeo, warmGlow);
+                        head.position.set(polePos.x - side * 1.7, 7.15, polePos.z);
+                        this.group.add(head);
+                        const glow = new THREE.PointLight(0xffd39a, 0.55, 24, 2);
+                        glow.position.set(head.position.x, 6.8, head.position.z);
+                        this.group.add(glow);
+                    }
+                    if (i % 56 === 5) {
+                        const signPos = pt.clone().addScaledVector(right, side * (this.roadWidth / 2 + 7));
+                        const sign = new THREE.Group();
+                        const panel = new THREE.Mesh(new THREE.BoxGeometry(5.8, 2.2, 0.28), boardMat);
+                        panel.position.y = 4.2;
+                        sign.add(panel);
+                        const stripe = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.12, 0.34), cyanGlow);
+                        stripe.position.set(0, 3.55, 0);
+                        sign.add(stripe);
+                        sign.position.copy(signPos);
+                        sign.rotation.y = angle;
+                        this.group.add(sign);
+                    }
+                });
+            }
+
+            // Grandstands with roof ribs and coloured fascia around the start zone.
+            const standMat = new THREE.MeshStandardMaterial({ color: 0x26364d, roughness: 0.72 });
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x10243d, metalness: 0.45, roughness: 0.34 });
+            const seatMat = new THREE.MeshStandardMaterial({ color: 0x53677f, roughness: 0.82 });
+            [-38, -82].forEach((zPos, idx) => {
+                const stand = new THREE.Group();
+                const base = new THREE.Mesh(new THREE.BoxGeometry(15, 7, 34), standMat);
+                base.position.y = 3.5;
+                base.castShadow = true;
+                stand.add(base);
+                for (let row = 0; row < 5; row++) {
+                    const seats = new THREE.Mesh(new THREE.BoxGeometry(12.5, 0.3, 3.8), seatMat);
+                    seats.position.set(-1, 5 + row * 0.62, -12 + row * 4.2);
+                    stand.add(seats);
+                }
+                const roof = new THREE.Mesh(new THREE.BoxGeometry(18, 0.7, 38), roofMat);
+                roof.position.set(-1.5, 9.1, 0);
                 roof.castShadow = true;
                 stand.add(roof);
-
-                stand.position.set(24, 0, zPos);
+                const fascia = new THREE.Mesh(new THREE.BoxGeometry(18.2, 0.28, 0.35), idx ? warmGlow : cyanGlow);
+                fascia.position.set(-1.5, 8.1, 17.2);
+                stand.add(fascia);
+                stand.position.set(25, 0, zPos);
                 this.group.add(stand);
             });
 
-            // Stylized Low-Poly Pine Trees scattered safely outside track corridor
-            const trunkGeo = new THREE.CylinderGeometry(0.5, 0.7, 3, 6);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
-            const leavesGeo = new THREE.ConeGeometry(3.2, 8.5, 7);
-            const leavesMat = new THREE.MeshStandardMaterial({ color: this.config.treeColor, roughness: 0.8 });
-
+            // Distinct trackside trees, instanced through shared geometry and materials.
+            const trunkGeo = new THREE.CylinderGeometry(0.38, 0.58, 3.2, 6);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x594232 });
+            const leavesGeo = new THREE.ConeGeometry(3.1, 8.2, 7);
+            const leavesMat = new THREE.MeshStandardMaterial({ color: this.config.treeColor, roughness: 0.84 });
             let placed = 0;
             let attempts = 0;
-            while (placed < 135 && attempts < 1200) {
+            while (placed < 115 && attempts < 1100) {
                 attempts++;
-                const rx = (Math.random() - 0.5) * 780;
-                const rz = (Math.random() - 0.5) * 780;
-                const candidate = new THREE.Vector3(rx, 0, rz);
-
-                // Ensure minimum distance from any track point
+                const candidate = new THREE.Vector3((Math.random() - 0.5) * 780, 0, (Math.random() - 0.5) * 780);
                 let tooClose = false;
                 for (let i = 0; i < this.curvePoints.length; i += 4) {
-                    if (candidate.distanceToSquared(this.curvePoints[i]) < 26 * 26) {
-                        tooClose = true;
-                        break;
-                    }
+                    if (candidate.distanceToSquared(this.curvePoints[i]) < 32 * 32) { tooClose = true; break; }
                 }
                 if (tooClose) continue;
-
                 const tree = new THREE.Group();
                 const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-                trunk.position.y = 1.5;
+                trunk.position.y = 1.6;
                 trunk.castShadow = true;
                 tree.add(trunk);
-
                 const crown = new THREE.Mesh(leavesGeo, leavesMat);
-                crown.position.y = 6.5;
+                crown.position.y = 6.2;
                 crown.castShadow = true;
                 tree.add(crown);
-
-                const scale = 0.8 + Math.random() * 0.75;
+                const scale = 0.78 + Math.random() * 0.8;
                 tree.scale.set(scale, scale, scale);
+                tree.rotation.y = Math.random() * Math.PI;
                 tree.position.copy(candidate);
                 this.group.add(tree);
                 placed++;
+            }
+
+            // Distant skyline silhouettes make the coastal circuit feel like a real venue.
+            const skylineMat = new THREE.MeshStandardMaterial({ color: 0x14263e, roughness: 0.9, metalness: 0.12 });
+            const skylineGlow = new THREE.MeshBasicMaterial({ color: 0x2b91bd });
+            for (let i = 0; i < 34; i++) {
+                const angle = (i / 34) * Math.PI * 2;
+                const radius = 360 + (i % 4) * 22;
+                const width = 10 + (i % 5) * 3;
+                const height = 18 + ((i * 17) % 42);
+                const building = new THREE.Group();
+                const tower = new THREE.Mesh(new THREE.BoxGeometry(width, height, 9 + (i % 3) * 3), skylineMat);
+                tower.position.y = height / 2 - 1;
+                building.add(tower);
+                for (let row = 0; row < 4; row++) {
+                    const windowStrip = new THREE.Mesh(new THREE.BoxGeometry(width * 0.72, 0.12, 0.08), skylineGlow);
+                    windowStrip.position.set(0, 4 + row * Math.max(3, height / 5), 4.7 + (i % 3));
+                    building.add(windowStrip);
+                }
+                building.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+                building.rotation.y = -angle;
+                this.group.add(building);
             }
         }
 
