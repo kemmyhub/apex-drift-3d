@@ -14,6 +14,7 @@ src/
     ApexDriftApp.js       Game lifecycle, menus, HUD and camera
     carCatalog.js         Vehicle specifications and paint options
     ProfileManager.js     Persistent driver XP, credits and race records
+    UpgradeManager.js     Per-car engine, handling and nitro upgrades
     TrackCatalog.js       Selectable circuit layouts and environments
     RaceTrack.js          Circuit geometry and track environment
     Vehicle.js            Vehicle models, handling and AI driving
@@ -50,3 +51,8 @@ The current release is a single-player browser game. The multiplayer prototype i
 ## Deployment
 
 This repository is connected to the Cloudflare Pages project `apex-drift-3d`. Pushes to `main` are configured as production deployments.
+
+
+## Garage upgrades
+
+Race credits can be spent on engine, handling, and nitro upgrades for each vehicle. Each upgrade category has five levels and is saved locally in the browser. Upgrades affect the selected player car, not AI opponents.
