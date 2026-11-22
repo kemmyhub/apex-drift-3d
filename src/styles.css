@@ -670,3 +670,134 @@ button:disabled { opacity: .42; cursor: not-allowed; filter: grayscale(.45); }
   .car-card-stats { font-size: 6px; letter-spacing: 0; }
   #car-cards > button { padding: 8px 7px; }
 }
+
+
+/* Responsive layout correction: keep every menu panel reachable and prevent HUD collisions. */
+html, body { width:100%; min-width:320px; min-height:100%; }
+body { overflow:hidden; }
+#ui-main-menu {
+  height:100vh; height:100dvh; min-height:0; justify-content:flex-start; align-items:stretch;
+  gap:clamp(16px,3vh,30px); padding:clamp(58px,7vh,82px) clamp(12px,3vw,36px) 22px;
+  overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+}
+#ui-main-menu > .pointer-events-auto:first-child {
+  flex:0 0 auto; margin:0; flex-wrap:wrap; min-width:0;
+}
+#ui-main-menu > .grid {
+  flex:0 0 auto; width:min(100%,1280px); max-height:none !important; margin:0 auto; align-items:stretch;
+}
+#ui-main-menu > .grid > .glass-panel { min-width:0; overflow:visible; }
+#ui-main-menu .grid, #ui-main-menu .flex, #ui-main-menu .glass-panel { min-width:0; }
+#ui-main-menu .font-racing, #ui-main-menu button, #ui-main-menu label { overflow-wrap:anywhere; }
+#upgrade-list, #upgrade-list > * { min-width:0; }
+#global-controls { max-width:calc(100vw - 16px); }
+#ui-mp-lobby, #ui-podium, #ui-career, #ui-pause {
+  overflow-x:hidden; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+}
+#ui-mp-lobby > div, #ui-podium > div, .career-modal, .pause-modal {
+  max-height:calc(100vh - 32px); max-height:calc(100dvh - 32px);
+  overflow-y:auto; overscroll-behavior:contain;
+}
+#ui-race-hud {
+  padding:clamp(8px,1.6vw,22px); padding-top:max(58px,env(safe-area-inset-top) + 48px);
+  padding-bottom:max(12px,env(safe-area-inset-bottom)); gap:12px;
+}
+#ui-race-hud > div:first-child { width:100%; min-width:0; padding-right:0; gap:10px; }
+#ui-race-hud > div:last-child { width:100%; min-width:0; gap:clamp(8px,1.5vw,18px); }
+#ui-race-hud > div:last-child > * { min-width:0; }
+#hud-weapon-panel { flex:0 0 auto; }
+#ui-race-hud button { touch-action:none; }
+#minimap-canvas { display:block; max-width:100%; height:auto; aspect-ratio:1; }
+#ui-podium > div { width:min(100%,680px); }
+#podium-results > div, #podium-results > div > div { min-width:0; }
+#podium-results > div { gap:8px; }
+#podium-results .font-racing { overflow-wrap:anywhere; }
+@media (min-width:1024px) {
+  #ui-main-menu { padding-top:28px; }
+  #ui-main-menu > .grid { margin-top:auto; }
+}
+@media (max-width:1023px) {
+  #ui-main-menu { gap:18px; }
+  #ui-main-menu > .grid { grid-template-columns:minmax(0,1fr); }
+  #ui-main-menu > .grid > .glass-panel { width:100%; }
+}
+@media (max-width:640px) {
+  #ui-main-menu { padding:58px 10px max(14px,env(safe-area-inset-bottom)); gap:14px; }
+  #ui-main-menu > .pointer-events-auto:first-child {
+    display:flex; flex-direction:column; align-items:stretch; gap:10px; padding:0 2px 12px;
+  }
+  #ui-main-menu > .pointer-events-auto:first-child > div:first-child { min-width:0; }
+  #ui-main-menu h1 { font-size:clamp(1.75rem,8vw,2.55rem); }
+  #driver-profile-controls { align-self:stretch; margin:0; display:flex; flex-wrap:nowrap; width:100%; }
+  #driver-profile-controls > button { flex:0 0 auto; }
+  #driver-profile-controls > div { flex:1 1 0; }
+  #driver-profile-controls input { width:100%; }
+  #ui-main-menu > .grid { gap:12px; }
+  #ui-main-menu > .grid > .glass-panel { padding:13px; }
+  #ui-main-menu .grid.grid-cols-3 { grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+  #car-cards > button { min-width:0; padding:8px 6px; }
+  .car-class-tag { font-size:7px; letter-spacing:.04em; }
+  .car-card-stats { flex-wrap:wrap; justify-content:center; font-size:7px; }
+  #color-swatches { flex-wrap:wrap; justify-content:flex-end; }
+  #ui-main-menu .text-xs { overflow-wrap:anywhere; }
+  #ui-race-hud {
+    padding:max(54px,env(safe-area-inset-top) + 46px) 9px max(10px,env(safe-area-inset-bottom));
+    justify-content:space-between; gap:8px;
+  }
+  #ui-race-hud > div:first-child {
+    display:grid; grid-template-columns:auto minmax(0,1fr); align-items:start; gap:7px;
+  }
+  #ui-race-hud > div:first-child > div:first-child { gap:6px; }
+  #ui-race-hud > div:first-child > div:first-child > .glass-panel { padding:8px 10px; }
+  #ui-race-hud > div:first-child > div:first-child .font-racing { font-size:1.25rem; }
+  #ui-race-hud > div:first-child > .glass-panel { justify-content:space-between; gap:8px; padding:8px 10px; min-width:0; }
+  #ui-race-hud > div:first-child > .glass-panel > div { min-width:0; }
+  #ui-race-hud > div:first-child > .glass-panel span { font-size:10px; }
+  #ui-race-hud > div:last-child {
+    display:grid; grid-template-columns:minmax(76px,auto) minmax(0,1fr);
+    grid-template-areas:"map speed" "touch touch"; align-items:end; gap:8px;
+  }
+  #ui-race-hud > div:last-child > div:first-child { grid-area:map; padding:6px; }
+  #ui-race-hud #minimap-canvas { width:clamp(76px,23vw,104px); height:auto; }
+  #ui-race-hud > div:last-child > .skew-box {
+    grid-area:speed; min-width:0; width:100%; padding:9px 12px;
+  }
+  #ui-race-hud #hud-speed { font-size:clamp(2rem,9vw,2.8rem); }
+  #hud-weapon-panel {
+    position:fixed; top:max(104px,env(safe-area-inset-top) + 96px); right:9px; bottom:auto;
+    z-index:25; min-width:0; width:112px; padding:7px; gap:5px;
+  }
+  #hud-weapon-panel .weapon-fire { padding:8px 6px; }
+  #ui-race-hud > div:last-child > [class~="sm:hidden"] {
+    grid-area:touch; display:flex; flex-wrap:wrap; justify-content:center; gap:7px; width:100%;
+  }
+  #ui-race-hud > div:last-child > [class~="sm:hidden"] button {
+    flex:1 1 52px; min-width:0; min-height:46px; padding:8px 9px; font-size:10px;
+  }
+  #ui-race-hud > div:last-child > [class~="sm:hidden"] #touch-left,
+  #ui-race-hud > div:last-child > [class~="sm:hidden"] #touch-right { flex:0 0 46px; }
+  #ui-race-hud > div:last-child > [class~="sm:hidden"] #touch-gas { flex-grow:1.4; }
+  #ui-podium { align-items:flex-start; padding:10px; }
+  #ui-podium > div { margin:auto 0; padding:16px 12px; }
+  #ui-podium h2 { font-size:1.65rem; }
+  #podium-results > div { padding:9px; }
+  #podium-results .font-racing { font-size:11px; }
+  #toast-box { width:calc(100% - 24px); bottom:max(12px,env(safe-area-inset-bottom)); }
+  #toast-text { text-align:center; }
+}
+@media (max-width:380px) {
+  #ui-main-menu > .grid > .glass-panel { padding:11px; }
+  #ui-main-menu .grid.grid-cols-3 { gap:5px; }
+  #car-cards > button { padding:7px 4px; }
+  #driver-profile-controls > button { padding-inline:8px; font-size:9px; }
+  #ui-race-hud > div:first-child > div:first-child > .glass-panel { padding:7px 8px; }
+  #ui-race-hud > div:first-child > .glass-panel { padding:7px; }
+  #ui-race-hud > div:last-child > [class~="sm:hidden"] button { flex-basis:44px; }
+}
+@media (orientation:landscape) and (max-height:500px) {
+  #ui-race-hud { padding-top:52px; }
+  #ui-race-hud > div:last-child { gap:6px; }
+  #ui-race-hud #minimap-canvas { width:72px; }
+  #ui-race-hud > div:last-child > [class~="sm:hidden"] button { min-height:38px; }
+  #hud-weapon-panel { top:54px; right:8px; width:104px; }
+}
