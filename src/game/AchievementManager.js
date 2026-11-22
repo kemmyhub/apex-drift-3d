@@ -1,3 +1,5 @@
+import { getLocalStorageItem, setLocalStorageItem } from "../utils/storage.js";
+
 const STORAGE_KEY = "apex_achievements_v1";
 const ACHIEVEMENTS = [
  { id:"first-race", name:"Lights Out", description:"Complete your first race", reward:250, test:p=>p.races>=1 },
@@ -10,10 +12,10 @@ const ACHIEVEMENTS = [
 class AchievementManager {
  constructor(profile){ this.profile=profile; this.unlocked=this.load(); }
  load(){
-  try { const value=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]"); return Array.isArray(value)?[...new Set(value.filter(id=>ACHIEVEMENTS.some(a=>a.id===id)))]:[]; }
+  try { const value=JSON.parse(getLocalStorageItem(STORAGE_KEY)||"[]"); return Array.isArray(value)?[...new Set(value.filter(id=>ACHIEVEMENTS.some(a=>a.id===id)))]:[]; }
   catch { return []; }
  }
- save(){ try { localStorage.setItem(STORAGE_KEY,JSON.stringify(this.unlocked)); } catch(error){ console.warn("APEX achievements could not be saved.",error); } }
+ save(){ setLocalStorageItem(STORAGE_KEY,JSON.stringify(this.unlocked)); }
  evaluate(){
   const newlyUnlocked=ACHIEVEMENTS.filter(a=>!this.unlocked.includes(a.id)&&a.test(this.profile.data));
   if(!newlyUnlocked.length)return [];

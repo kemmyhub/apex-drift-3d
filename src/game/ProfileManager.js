@@ -1,3 +1,5 @@
+import { getLocalStorageItem, setLocalStorageItem } from "../utils/storage.js";
+
 const STORAGE_KEY = "apex_profile_v1";
 
 function emptyProfile() {
@@ -19,7 +21,7 @@ class ProfileManager {
 
     load() {
         try {
-            const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+            const stored = JSON.parse(getLocalStorageItem(STORAGE_KEY) || "null");
             if (!stored || typeof stored !== "object") return emptyProfile();
             const defaults = emptyProfile();
             return Object.fromEntries(Object.keys(defaults).map(key => {
@@ -32,11 +34,7 @@ class ProfileManager {
     }
 
     save() {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
-        } catch (error) {
-            console.warn("APEX profile could not be saved in this browser.", error);
-        }
+        setLocalStorageItem(STORAGE_KEY, JSON.stringify(this.data));
     }
 
     get level() {

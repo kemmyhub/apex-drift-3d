@@ -1,3 +1,5 @@
+import { getLocalStorageItem, setLocalStorageItem } from "../utils/storage.js";
+
 const STORAGE_KEY = "apex_upgrades_v1";
 const TYPES = {
     engine: { label: "Engine", costs: [350, 600, 900, 1300, 1800] },
@@ -14,7 +16,8 @@ class UpgradeManager {
 
     load() {
         try {
-            const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+            const stored = JSON.parse(getLocalStorageItem(STORAGE_KEY) || "{}");
+            if (!stored || typeof stored !== "object" || Array.isArray(stored)) return {};
             const clean = {};
             Object.keys(stored || {}).forEach(carId => {
                 clean[carId] = {};
@@ -30,8 +33,7 @@ class UpgradeManager {
     }
 
     save() {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); }
-        catch (error) { console.warn("APEX upgrades could not be saved.", error); }
+        setLocalStorageItem(STORAGE_KEY, JSON.stringify(this.data));
     }
 
     levels(carId) {

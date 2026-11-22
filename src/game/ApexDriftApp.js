@@ -8,6 +8,10 @@ import { UpgradeManager, UPGRADE_TYPES } from "./UpgradeManager.js";
 import { AchievementManager } from "./AchievementManager.js";
 import { TRACK_CATALOG, getTrackConfig } from "./TrackCatalog.js";
 import { PowerUpManager } from "./PowerUpManager.js";
+import { getLocalStorageItem, setLocalStorageItem } from "../utils/storage.js";
+import { TutorialManager } from "./TutorialManager.js";
+import { GamepadInputController, ACTIONS as GAMEPAD_ACTIONS, mergeActionState } from "./InputController.js";
+import { DialogFocusManager } from "../utils/DialogFocusManager.js";
 
 const THREE = window.THREE;
 
@@ -19,7 +23,12 @@ class ApexDriftApp {
             this.achievements = new AchievementManager(this.profile);
             this.selectedCarId = CAR_MODELS[0].id;
             this.selectedColor = PAINT_COLORS[0].hex;
-            this.selectedTrackId = localStorage.getItem("apex_track") || "neon-coast";
+            this.tutorial = new TutorialManager();
+            this.dialogFocus = new DialogFocusManager();
+            this.gamepadInput = new GamepadInputController(window.navigator);
+            this.gamepadActions = Object.fromEntries(GAMEPAD_ACTIONS.map(action => [action, false]));
+            this.lastGamepadId = null;
+            this.selectedTrackId = getLocalStorageItem("apex_track") || "neon-coast";
             if (!TRACK_CATALOG.some(track => track.id === this.selectedTrackId)) this.selectedTrackId = "neon-coast";
             this.mode = 'MENU'; // MENU | COUNTDOWN | RACING | PAUSED | PODIUM
             this.raceType = 'SP'; // SP | TT | MP
@@ -28,7 +37,7 @@ class ApexDriftApp {
             this.raceClock = 0;
             this.lastFrameTime = performance.now();
             this.mpSyncTimer = 0;
-            this.personalBestLap = parseFloat(localStorage.getItem('apex_pb_lap') || '0') || Infinity;
+            this.personalBestLap = parseFloat(getLocalStorageItem('apex_pb_lap') || '0') || Infinity;
 
             this.input = { up: false, down: false, left: false, right: false, drift: false };
 
@@ -41,6 +50,9 @@ class ApexDriftApp {
             this.powerUps = new PowerUpManager(this.scene, this.track, message => { if (message) this.showToast(message); });
             this.buildPreviewShowcase();
             this.initUI();
+            window.addEventListener("apex-storage-warning", event => {
+                this.showToast(event.detail?.message || "Progress could not be saved in this browser.");
+            });
             this.bindInputs();
 
             this.mp = new MultiplayerManager(
@@ -58,7 +70,7 @@ class ApexDriftApp {
             this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, powerPreference: 'high-performance' });
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             this.graphicsModes = ['ULTRA', 'HIGH', 'PERFORMANCE'];
-            this.graphicsMode = localStorage.getItem('apex_graphics') || (window.matchMedia('(max-width: 768px)').matches ? 'HIGH' : 'ULTRA');
+            this.graphicsMode = getLocalStorageItem('apex_graphics') || (window.matchMedia('(max-width: 768px)').matches ? 'HIGH' : 'ULTRA');
             if (!this.graphicsModes.includes(this.graphicsMode)) this.graphicsMode = 'ULTRA';
             this.renderer.outputEncoding = THREE.sRGBEncoding;
             this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -108,9 +120,9 @@ class ApexDriftApp {
             if (!this.renderer) return;
             const settings = { ULTRA: { pixelRatio: Math.min(window.devicePixelRatio, 2), shadows: true, shadowType: THREE.PCFSoftShadowMap }, HIGH: { pixelRatio: Math.min(window.devicePixelRatio, 1.5), shadows: true, shadowType: THREE.PCFShadowMap }, PERFORMANCE: { pixelRatio: 1, shadows: false, shadowType: THREE.BasicShadowMap } }[this.graphicsMode];
             this.renderer.setPixelRatio(settings.pixelRatio); this.renderer.shadowMap.enabled = settings.shadows; this.renderer.shadowMap.type = settings.shadowType; this.renderer.setSize(window.innerWidth, window.innerHeight);
-            const button = document.getElementById('btn-quality'); if (button) button.textContent = this.graphicsMode;
+            const button = document.getElementById('btn-quality'); if (button) { button.textContent = this.graphicsMode; button.setAttribute('aria-label', `Graphics quality: ${this.graphicsMode}. Activate to change graphics quality.`); }
         }
-        cycleGraphicsMode() { const idx = this.graphicsModes.indexOf(this.graphicsMode); this.graphicsMode = this.graphicsModes[(idx + 1) % this.graphicsModes.length]; localStorage.setItem('apex_graphics', this.graphicsMode); this.applyGraphicsMode(); this.showToast('Graphics set to ' + this.graphicsMode); }
+        cycleGraphicsMode() { const idx = this.graphicsModes.indexOf(this.graphicsMode); this.graphicsMode = this.graphicsModes[(idx + 1) % this.graphicsModes.length]; setLocalStorageItem('apex_graphics', this.graphicsMode); this.applyGraphicsMode(); this.showToast('Graphics set to ' + this.graphicsMode); }
 
         changeTrack(trackId) {
             if (!TRACK_CATALOG.some(track => track.id === trackId) || trackId === this.selectedTrackId) return;
@@ -118,7 +130,7 @@ class ApexDriftApp {
             if (this.powerUps) this.powerUps.dispose();
             if (this.track) this.track.dispose();
             this.selectedTrackId = trackId;
-            localStorage.setItem("apex_track", trackId);
+            setLocalStorageItem("apex_track", trackId);
             const config = getTrackConfig(trackId);
             this.updateTrackBrief();
             this.scene.background.setHex(config.skyColor);
@@ -165,10 +177,13 @@ class ApexDriftApp {
                 btn.style.backgroundColor = c.hex;
                 btn.style.borderColor = c.hex === this.selectedColor ? '#ffffff' : 'transparent';
                 btn.title = c.name;
+                btn.setAttribute('aria-label', `${c.name} paint`);
+                btn.setAttribute('aria-pressed', String(c.hex === this.selectedColor));
                 btn.onclick = () => {
                     this.selectedColor = c.hex;
-                    Array.from(swatchContainer.children).forEach(el => el.style.borderColor = 'transparent');
+                    Array.from(swatchContainer.children).forEach(el => { el.style.borderColor = 'transparent'; el.setAttribute('aria-pressed', 'false'); });
                     btn.style.borderColor = '#ffffff';
+                    btn.setAttribute('aria-pressed', 'true');
                     this.buildPreviewShowcase();
                     this.sound.playBeep(false);
                 };
@@ -182,6 +197,9 @@ class ApexDriftApp {
                 CAR_MODELS.forEach(car => {
                     const active = car.id === this.selectedCarId;
                     const card = document.createElement('button');
+                    card.type = 'button';
+                    card.setAttribute('aria-label', `${car.name}, ${car.tag}. Top speed ${car.stats.speed}, acceleration ${car.stats.accel}, handling ${car.stats.handling}.`);
+                    card.setAttribute('aria-pressed', String(active));
                     card.className = `p-3 rounded-2xl border text-left transition cursor-pointer ${
                         active
                             ? 'bg-sky-500/20 border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.25)]'
@@ -237,11 +255,11 @@ class ApexDriftApp {
             const careerButton = document.getElementById('btn-open-career');
             if (careerButton) careerButton.onclick = () => this.openCareer();
             const closeCareer = document.getElementById('btn-close-career');
-            if (closeCareer) closeCareer.onclick = () => document.getElementById('ui-career').classList.add('hidden');
+            if (closeCareer) closeCareer.onclick = () => this.closeCareerDialog();
             const resumeButton = document.getElementById('btn-resume-race');
             if (resumeButton) resumeButton.onclick = () => this.resumeRace();
             const restartButton = document.getElementById('btn-restart-race');
-            if (restartButton) restartButton.onclick = () => { const type = this.raceType; const roster = type === 'MP' ? Object.values(this.mp.players) : []; this.returnToMenu(); this.startRace(type, roster); };
+            if (restartButton) restartButton.onclick = () => this.restartRace();
             const pauseQuit = document.getElementById('btn-pause-quit');
             if (pauseQuit) pauseQuit.onclick = () => this.returnToMenu();
             const pauseButton = document.getElementById('btn-pause-race');
@@ -258,19 +276,23 @@ class ApexDriftApp {
                 this.sound.init();
                 this.startRace('TT');
             };
+            document.getElementById('btn-open-tutorial').onclick = () => this.tutorial.open({
+                onStart: () => { this.sound.init(); this.startRace('SP'); }
+            });
 
             // Multiplayer Modal Controls
             document.getElementById('btn-open-mp').onclick = () => {
                 this.sound.init();
-                document.getElementById('ui-mp-lobby').classList.remove('hidden');
+                const lobby = document.getElementById('ui-mp-lobby');
+                lobby.classList.remove('hidden');
                 document.getElementById('mp-step-connect').classList.remove('hidden');
                 document.getElementById('mp-step-room').classList.add('hidden');
                 document.getElementById('mp-error-msg').classList.add('hidden');
+                this.dialogFocus.open(lobby, { initialFocusSelector: '#btn-close-mp', onEscape: () => this.closeMultiplayerDialog() });
             };
 
             document.getElementById('btn-close-mp').onclick = () => {
-                this.mp.leaveRoom();
-                document.getElementById('ui-mp-lobby').classList.add('hidden');
+                this.closeMultiplayerDialog();
             };
 
             document.getElementById('btn-create-room').onclick = () => {
@@ -278,6 +300,7 @@ class ApexDriftApp {
                 this.mp.createRoom(name, this.selectedCarId, this.selectedColor);
                 document.getElementById('mp-step-connect').classList.add('hidden');
                 document.getElementById('mp-step-room').classList.remove('hidden');
+                document.getElementById('btn-leave-room')?.focus?.();
                 this.sound.playBeep(true);
             };
 
@@ -289,11 +312,13 @@ class ApexDriftApp {
                 if (!res.ok) {
                     errEl.textContent = res.error;
                     errEl.classList.remove('hidden');
+                    errEl.focus?.();
                     return;
                 }
                 errEl.classList.add('hidden');
                 document.getElementById('mp-step-connect').classList.add('hidden');
                 document.getElementById('mp-step-room').classList.remove('hidden');
+                document.getElementById('btn-leave-room')?.focus?.();
                 this.sound.playBeep(true);
             };
 
@@ -312,6 +337,7 @@ class ApexDriftApp {
                 this.mp.leaveRoom();
                 document.getElementById('mp-step-room').classList.add('hidden');
                 document.getElementById('mp-step-connect').classList.remove('hidden');
+                document.getElementById('btn-create-room')?.focus?.();
             };
 
             document.getElementById('btn-mp-start').onclick = () => {
@@ -353,7 +379,7 @@ class ApexDriftApp {
                 const detail = type === "engine" ? "Top speed and acceleration" : type === "handling" ? "Cornering response and grip" : "Longer turbo boost duration";
                 return `<div class="flex items-center gap-3 rounded-xl bg-slate-900/80 border border-slate-800 p-3">
                     <div class="min-w-0 flex-1"><div class="flex items-center justify-between gap-2"><span class="text-xs font-bold text-white">${config.label}</span><span class="text-[10px] font-racing text-sky-300">LV ${level}/5</span></div><div class="text-[10px] text-slate-500 mt-0.5">${detail}</div><div class="h-1.5 bg-slate-800 rounded-full overflow-hidden mt-2"><div class="h-full bg-gradient-to-r from-sky-500 to-cyan-300" style="width:${level * 20}%"></div></div></div>
-                    <button id="upgrade-${type}" ${maxed || !canAfford ? "disabled" : ""} class="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider ${maxed ? "bg-slate-800 text-slate-500" : canAfford ? "bg-sky-500 text-slate-950 hover:bg-sky-400" : "bg-slate-800 text-slate-500"} disabled:opacity-60">${maxed ? "MAX" : cost.toLocaleString() + " CR"}</button>
+                    <button id="upgrade-${type}" aria-label="${config.label} upgrade, ${maxed ? "maximum level 5 reached" : `next level ${level + 1}, costs ${cost.toLocaleString()} credits`}" ${maxed || !canAfford ? "disabled" : ""} class="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider ${maxed ? "bg-slate-800 text-slate-500" : canAfford ? "bg-sky-500 text-slate-950 hover:bg-sky-400" : "bg-slate-800 text-slate-500"} disabled:opacity-60">${maxed ? "MAX" : cost.toLocaleString() + " CR"}</button>
                 </div>`;
             }).join("");
             Object.keys(UPGRADE_TYPES).forEach(type => {
@@ -425,13 +451,29 @@ class ApexDriftApp {
         }
 
         bindInputs() {
+            const keyboardActions = {
+                KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down',
+                KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right',
+                Space: 'drift', ShiftLeft: 'boost', ShiftRight: 'boost'
+            };
+            const heldKeys = new Set();
+            const pointerActions = new Map();
+            const hasSource = action => [...heldKeys].some(code => keyboardActions[code] === action) || [...pointerActions.values()].includes(action);
+            const refreshAction = action => { this.input[action] = hasSource(action); };
+            const clearInputs = () => {
+                heldKeys.clear();
+                pointerActions.clear();
+                this.input = { up: false, down: false, left: false, right: false, drift: false, boost: false };
+            };
+            this.clearInputState = clearInputs;
+
             const setKey = (code, state) => {
-                if (code === 'KeyW' || code === 'ArrowUp') this.input.up = state;
-                if (code === 'KeyS' || code === 'ArrowDown') this.input.down = state;
-                if (code === 'KeyA' || code === 'ArrowLeft') this.input.left = state;
-                if (code === 'KeyD' || code === 'ArrowRight') this.input.right = state;
-                if (code === 'Space') this.input.drift = state;
-                if (code === 'ShiftLeft' || code === 'ShiftRight') this.input.boost = state;
+                const action = keyboardActions[code];
+                if (action) {
+                    if (state) heldKeys.add(code);
+                    else heldKeys.delete(code);
+                    refreshAction(action);
+                }
                 if (state && code === 'KeyF' && this.mode === 'RACING' && this.playerVehicle && this.powerUps) this.powerUps.activate(this.playerVehicle, this.vehicles);
                 if (state && code === 'KeyR' && this.mode === 'RACING' && this.playerVehicle) {
                     this.playerVehicle.resetToTrack();
@@ -449,19 +491,77 @@ class ApexDriftApp {
                 setKey(e.code, true);
             });
             window.addEventListener('keyup', e => setKey(e.code, false));
+            window.addEventListener('blur', clearInputs);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') clearInputs();
+            });
 
-            // Mobile Touch Controls
+            // Pointer/touch controls release even when a gesture is cancelled or loses capture.
             const bindTouch = (id, key) => {
                 const el = document.getElementById(id);
                 if (!el) return;
-                el.addEventListener('touchstart', e => { e.preventDefault(); this.input[key] = true; });
-                el.addEventListener('touchend', e => { e.preventDefault(); this.input[key] = false; });
+                const releasePointer = pointerId => {
+                    const action = pointerActions.get(pointerId);
+                    if (!action) return;
+                    pointerActions.delete(pointerId);
+                    refreshAction(action);
+                };
+                if (typeof window.PointerEvent === 'function') {
+                    el.addEventListener('pointerdown', event => {
+                        if (event.button !== undefined && event.button !== 0) return;
+                        event.preventDefault();
+                        pointerActions.set(event.pointerId, key);
+                        refreshAction(key);
+                        try { el.setPointerCapture?.(event.pointerId); } catch { /* pointer may already be inactive */ }
+                    });
+                    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => {
+                        el.addEventListener(type, event => releasePointer(event.pointerId));
+                    });
+                } else {
+                    el.addEventListener('touchstart', event => {
+                        event.preventDefault();
+                        for (const touch of event.changedTouches) pointerActions.set(`touch-${touch.identifier}`, key);
+                        refreshAction(key);
+                    }, { passive: false });
+                    ['touchend', 'touchcancel'].forEach(type => el.addEventListener(type, event => {
+                        event.preventDefault();
+                        for (const touch of event.changedTouches) releasePointer(`touch-${touch.identifier}`);
+                    }, { passive: false }));
+                }
             };
             bindTouch('touch-left', 'left');
             bindTouch('touch-right', 'right');
             bindTouch('touch-drift', 'drift');
             bindTouch('touch-gas', 'up');
+            bindTouch('touch-brake', 'down');
             bindTouch('touch-boost', 'boost');
+        }
+
+        updateGamepadInput() {
+            if (!this.gamepadInput) return;
+            if (document.visibilityState === 'hidden' || (document.hasFocus && !document.hasFocus())) {
+                this.gamepadActions = Object.fromEntries(GAMEPAD_ACTIONS.map(action => [action, false]));
+                return;
+            }
+            const state = this.gamepadInput.poll();
+            if (state.connected && state.id !== this.lastGamepadId) {
+                this.showToast('Gamepad connected: left stick or D-pad to steer; A drift; B nitro; X power-up; Y reset; Start pause.');
+            } else if (state.disconnected) {
+                this.showToast('Gamepad disconnected. Keyboard and touch controls are still available.');
+            }
+            this.lastGamepadId = state.id;
+            this.gamepadActions = state.actions;
+
+            if (state.pressed.pause && ['RACING', 'COUNTDOWN', 'PAUSED'].includes(this.mode)) {
+                this.togglePause();
+                return;
+            }
+            if (this.mode !== 'RACING') return;
+            if (state.pressed.fire && this.playerVehicle && this.powerUps) this.powerUps.activate(this.playerVehicle, this.vehicles);
+            if (state.pressed.reset && this.playerVehicle) {
+                this.playerVehicle.resetToTrack();
+                this.showToast('Car repositioned onto track');
+            }
         }
 
         openCareer() {
@@ -488,14 +588,36 @@ class ApexDriftApp {
             <div class="career-section"><div class="career-section-title"><h3>ACHIEVEMENTS</h3><span>${unlocked} / ${achievements.length} UNLOCKED</span></div><div class="career-achievements">${achievements.map(item => `<article class="${item.unlocked ? 'is-unlocked' : 'is-locked'}"><div class="achievement-mark">${item.unlocked ? '★' : '◇'}</div><div><strong>${item.name}</strong><p>${item.description}</p></div><b>+${item.reward} CR</b></article>`).join('')}</div></div>
             <div class="career-section"><div class="career-section-title"><h3>GARAGE DEVELOPMENT</h3><span>UPGRADES BY CAR</span></div><div class="career-cars">${carRows}</div></div>`;
             document.getElementById('ui-career').classList.remove('hidden');
+            this.dialogFocus.open(document.getElementById('ui-career'), {
+                initialFocusSelector: '#btn-close-career',
+                onEscape: () => this.closeCareerDialog()
+            });
+        }
+
+        closeCareerDialog() {
+            document.getElementById('ui-career')?.classList.add('hidden');
+            this.dialogFocus.close();
+        }
+
+        closeMultiplayerDialog() {
+            this.mp.leaveRoom();
+            document.getElementById('ui-mp-lobby')?.classList.add('hidden');
+            this.dialogFocus.close();
         }
 
         togglePause() {
             if (this.mode === 'RACING' || this.mode === 'COUNTDOWN') {
                 this.modeBeforePause = this.mode;
+                if (this.mode === 'COUNTDOWN' && this.countdownTimer) {
+                    clearTimeout(this.countdownTimer);
+                    this.countdownTimer = null;
+                }
                 this.mode = 'PAUSED';
-                this.input = { up:false, down:false, left:false, right:false, drift:false, boost:false };
-                document.getElementById('ui-pause').classList.remove('hidden');
+                if (this.clearInputState) this.clearInputState();
+                else this.input = { up:false, down:false, left:false, right:false, drift:false, boost:false };
+                const pauseDialog = document.getElementById('ui-pause');
+                pauseDialog.classList.remove('hidden');
+                this.dialogFocus.open(pauseDialog, { initialFocusSelector: '#btn-resume-race', onEscape: () => this.resumeRace() });
                 document.getElementById('btn-pause-race')?.classList.add('hidden');
                 this.sound.updateVehicleAudio(0, false, false);
             } else if (this.mode === 'PAUSED') this.resumeRace();
@@ -503,12 +625,23 @@ class ApexDriftApp {
 
         resumeRace() {
             if (this.mode !== 'PAUSED') return;
-            this.mode = this.modeBeforePause === 'COUNTDOWN' ? 'RACING' : 'RACING';
+            if (this.modeBeforePause === 'COUNTDOWN') this.runCountdown(true);
+            else this.mode = 'RACING';
             document.getElementById('ui-pause').classList.add('hidden');
+            this.dialogFocus.closeIfOpen({ restoreFocus: false });
             document.getElementById('btn-pause-race')?.classList.remove('hidden');
+            document.getElementById('btn-pause-race')?.focus?.();
+        }
+
+        restartRace() {
+            const type = this.raceType;
+            const roster = type === 'MP' && this.mp ? Object.values(this.mp.players) : [];
+            this.returnToMenu();
+            this.startRace(type, roster);
         }
 
         startRace(type, mpRoster = []) {
+            this.dialogFocus.closeIfOpen({ restoreFocus: false });
             this.raceType = type;
             this.clearVehicles();
             if (this.powerUps) this.powerUps.dispose();
@@ -590,16 +723,20 @@ class ApexDriftApp {
             this.runCountdown();
         }
 
-        runCountdown() {
+        runCountdown(resume = false) {
+            if (!resume) this.countdownIndex = 0;
+            if (this.countdownTimer) clearTimeout(this.countdownTimer);
+            this.countdownTimer = null;
             this.mode = 'COUNTDOWN';
             const cdEl = document.getElementById('hud-countdown');
             cdEl.classList.remove('hidden');
 
             const steps = ['3', '2', '1', 'GO!'];
-            let idx = 0;
 
             const tick = () => {
                 if (this.mode !== 'COUNTDOWN') return;
+                this.countdownTimer = null;
+                const idx = this.countdownIndex || 0;
                 const label = steps[idx];
                 cdEl.textContent = label;
                 cdEl.classList.remove('countdown-anim');
@@ -613,10 +750,11 @@ class ApexDriftApp {
                     this.mode = 'RACING';
                     this.raceClock = 0;
                     this.vehicles.forEach(v => v.currentLapStart = 0);
+                    this.countdownIndex = 0;
                     setTimeout(() => cdEl.classList.add('hidden'), 650);
                 } else {
-                    idx++;
-                    setTimeout(tick, 850);
+                    this.countdownIndex = idx + 1;
+                    this.countdownTimer = setTimeout(tick, 850);
                 }
             };
             tick();
@@ -644,6 +782,7 @@ class ApexDriftApp {
         }
 
         returnToMenu() {
+            this.dialogFocus.closeIfOpen({ restoreFocus: false });
             this.mode = 'MENU';
             document.getElementById('ui-pause')?.classList.add('hidden');
             document.getElementById('btn-pause-race')?.classList.remove('hidden');
@@ -660,6 +799,7 @@ class ApexDriftApp {
             this.refreshBestLapBadge();
             this.refreshProfileUI();
             this.buildPreviewShowcase();
+            document.getElementById('btn-start-sp')?.focus?.();
         }
 
         showPodium() {
@@ -670,7 +810,7 @@ class ApexDriftApp {
             // Save personal best lap if broken
             if (this.playerVehicle && this.playerVehicle.bestLapTime < this.personalBestLap) {
                 this.personalBestLap = this.playerVehicle.bestLapTime;
-                localStorage.setItem('apex_pb_lap', String(this.personalBestLap));
+                setLocalStorageItem('apex_pb_lap', String(this.personalBestLap));
             }
 
             // Sort standings: finished cars by finishTime, active cars by totalProgress
@@ -739,6 +879,7 @@ class ApexDriftApp {
 
             document.getElementById('ui-race-hud').classList.add('hidden');
             document.getElementById('ui-podium').classList.remove('hidden');
+            document.getElementById('podium-title')?.focus?.();
         }
 
         updateHUD() {
@@ -885,6 +1026,7 @@ class ApexDriftApp {
             requestAnimationFrame(this.animate);
             const dt = Math.min(0.05, (now - this.lastFrameTime) / 1000);
             this.lastFrameTime = now;
+            this.updateGamepadInput();
 
             if (this.mode === 'RACING') {
                 this.raceClock += dt;
@@ -893,8 +1035,9 @@ class ApexDriftApp {
             const activeRace = this.mode === 'RACING';
             if (this.mode !== 'PAUSED') {
                 if (this.powerUps && activeRace) this.powerUps.update(dt, this.vehicles, this.raceClock);
+                const frameInput = mergeActionState(this.input, this.gamepadActions);
                 for (const v of this.vehicles) {
-                    v.update(dt, this.input, this.vehicles, activeRace, this.raceClock, this.sound);
+                    v.update(dt, frameInput, this.vehicles, activeRace, this.raceClock, this.sound);
                 }
             }
 

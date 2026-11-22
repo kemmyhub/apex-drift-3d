@@ -18,14 +18,23 @@
     <!-- 3D Viewport Canvas -->
     <canvas id="game-canvas"></canvas>
 
+    <section id="game-startup-error" class="startup-error" role="alert" aria-live="assertive" aria-labelledby="game-startup-title" tabindex="-1" hidden>
+        <div class="startup-error__card">
+            <p class="startup-error__eyebrow">APEX DRIFT 3D · GRAPHICS CHECK</p>
+            <h1 id="game-startup-title">3D graphics could not start</h1>
+            <p>This browser or session could not initialize WebGL. Try enabling hardware acceleration or updating your browser, then reload the game.</p>
+            <button type="button" data-startup-reload>Reload game</button>
+        </div>
+    </section>
+
     <!-- Global Top-Right Controls (Audio Mute + Quick Exit) -->
     <div id="global-controls" class="fixed top-4 right-4 z-50 flex items-center gap-2">
         <button id="btn-pause-race" class="hidden glass-panel px-3.5 py-2 rounded-xl text-xs font-bold tracking-wider uppercase text-cyan-200 hover:bg-cyan-500/20 border border-cyan-400/30 transition cursor-pointer">Ⅱ Pause</button>
         <button id="btn-exit-race" class="hidden glass-panel px-3.5 py-2 rounded-xl text-xs font-bold tracking-wider uppercase text-rose-400 hover:bg-rose-500/20 border border-rose-500/30 transition cursor-pointer">
             ✕ Quit Race
         </button>
-        <button id="btn-quality" title="Graphics quality" class="glass-panel px-3 py-2.5 rounded-xl text-[10px] font-racing font-bold tracking-wider text-cyan-300 uppercase">ULTRA</button>
-        <button id="btn-mute" title="Toggle Audio" class="glass-panel p-2.5 rounded-xl text-slate-200 hover:text-sky-400 transition cursor-pointer flex items-center gap-1.5">
+        <button id="btn-quality" type="button" aria-label="Graphics quality: Ultra. Activate to change graphics quality." title="Graphics quality" class="glass-panel px-3 py-2.5 rounded-xl text-[10px] font-racing font-bold tracking-wider text-cyan-300 uppercase">ULTRA</button>
+        <button id="btn-mute" type="button" aria-label="Toggle game audio" title="Toggle Audio" class="glass-panel p-2.5 rounded-xl text-slate-200 hover:text-sky-400 transition cursor-pointer flex items-center gap-1.5">
             <svg id="icon-sound-on" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
             </svg>
@@ -55,7 +64,7 @@
             <div id="driver-profile-controls" class="flex items-center gap-2 self-start sm:self-auto">
             <button id="btn-open-career" class="glass-panel px-4 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider text-cyan-200 hover:text-white">Career <span class="text-white/60">↗</span></button>
             <div class="glass-panel px-4 py-2.5 rounded-2xl flex items-center gap-3">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Driver</span>
+                <label for="input-player-name" class="text-xs font-bold uppercase tracking-wider text-slate-400">Driver</label>
                 <input id="input-player-name" type="text" maxlength="14" value="Racer_01"
                     class="bg-slate-900/80 border border-slate-700 focus:border-sky-400 rounded-xl px-3 py-1.5 text-sm font-bold text-white outline-none w-36 sm:w-44 transition"
                     placeholder="Enter Name">
@@ -111,7 +120,7 @@
                 </div>
 
                 <div class="mt-4 rounded-2xl border border-sky-500/20 bg-slate-950/70 p-3.5">
-                    <div class="flex items-center justify-between gap-2 mb-3"><div><div class="text-[10px] uppercase tracking-[0.18em] text-sky-300 font-bold">Workshop</div><div class="font-racing text-xs font-black text-white mt-1">PERFORMANCE UPGRADES</div></div><span class="text-[10px] text-slate-500">PER CAR · MAX LV 5</span></div>
+                    <div class="flex items-center justify-between gap-2 mb-3"><div><div class="text-[10px] uppercase tracking-[0.18em] text-sky-300 font-bold">Workshop</div><div class="font-racing text-xs font-black text-white mt-1">PERFORMANCE UPGRADES</div></div><span class="text-[10px] text-slate-300">PER CAR · MAX LV 5</span></div>
                     <div id="upgrade-list" class="space-y-2"></div>
                     <p class="text-[9px] text-slate-500 mt-2">Upgrades use race credits and apply to your selected car.</p>
                 </div>
@@ -151,6 +160,8 @@
                     <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg">GHOST PB</span>
                 </button>
 
+                <button id="btn-open-tutorial" type="button" class="w-full py-3 px-5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-cyan-400/30 text-cyan-100 font-racing font-bold text-xs tracking-wider uppercase">Driving school · Tutorial &amp; practice</button>
+
                 <button id="btn-open-mp" class="btn-glow w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-racing font-bold text-sm sm:text-base tracking-wider uppercase flex items-center justify-between cursor-pointer shadow-lg">
                     <span>🌐 Local Room Multiplayer</span>
                     <span class="text-xs bg-white/20 px-2.5 py-1 rounded-lg">ROOM LOBBY</span>
@@ -162,26 +173,43 @@
                     <span><strong class="text-slate-200">F</strong> Power-up</span>
                     <span><strong class="text-slate-200">R</strong> Reset Car</span>
                 </div>
+                <p class="text-[10px] leading-relaxed text-slate-400">Optional standard gamepad: left stick or D-pad steers/accelerates/brakes · A drift · B nitro · X power-up · Y reset · Start pause. Keyboard and touch remain available without a controller.</p>
             </div>
         </div>
     </div>
 
-    <div id="ui-career" class="hidden fixed inset-0 z-[70] career-backdrop p-4 sm:p-8 overflow-y-auto">
+    <div id="ui-tutorial" class="hidden fixed inset-0 z-[80] tutorial-backdrop p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="tutorial-title" tabindex="-1" hidden inert>
+        <section class="glass-panel tutorial-modal max-w-xl w-full rounded-3xl p-6 sm:p-8 my-auto mx-auto">
+            <p class="text-[10px] tracking-[.24em] text-cyan-300 font-bold">APEX DRIVING SCHOOL</p>
+            <h2 id="tutorial-title" class="font-racing text-2xl sm:text-3xl font-black mt-2">PRACTICE BRIEFING</h2>
+            <p id="tutorial-progress" class="text-sm text-cyan-100 font-bold mt-4" aria-live="polite" aria-atomic="true">Lesson 1 of 7</p>
+            <div id="tutorial-content" class="tutorial-content" aria-live="polite" aria-atomic="true"></div>
+            <div class="flex flex-wrap gap-2 mt-6">
+                <button id="tutorial-previous" type="button" class="tutorial-button">Previous</button>
+                <button id="tutorial-next" type="button" class="tutorial-button">Next lesson</button>
+                <button id="tutorial-start-practice" type="button" class="tutorial-button tutorial-button--primary">Start solo practice</button>
+                <button id="tutorial-skip" type="button" class="tutorial-button">Skip tutorial</button>
+            </div>
+            <p class="text-xs text-slate-400 mt-4">Use Tab to move between controls, Shift+Tab to go back, or Escape to close. You can return here from the garage at any time.</p>
+        </section>
+    </div>
+
+    <div id="ui-career" class="hidden fixed inset-0 z-[70] career-backdrop p-4 sm:p-8 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="career-title" tabindex="-1">
         <section class="glass-panel career-modal max-w-4xl mx-auto rounded-3xl p-5 sm:p-8 my-4">
-            <div class="flex items-start justify-between gap-4 mb-6"><div><p class="text-[10px] tracking-[.24em] text-cyan-300 font-bold">APEX DRIVER NETWORK</p><h2 class="font-racing text-2xl sm:text-3xl font-black mt-1">CAREER OVERVIEW</h2><p class="text-xs text-slate-400 mt-2">Your racing record, milestones and garage progress.</p></div><button id="btn-close-career" class="px-4 py-2 rounded-xl bg-slate-800 text-sm font-bold">✕ Close</button></div>
+            <div class="flex items-start justify-between gap-4 mb-6"><div><p class="text-[10px] tracking-[.24em] text-cyan-300 font-bold">APEX DRIVER NETWORK</p><h2 id="career-title" class="font-racing text-2xl sm:text-3xl font-black mt-1">CAREER OVERVIEW</h2><p class="text-xs text-slate-400 mt-2">Your racing record, milestones and garage progress.</p></div><button id="btn-close-career" class="px-4 py-2 rounded-xl bg-slate-800 text-sm font-bold">✕ Close</button></div>
             <div id="career-content" class="space-y-5"></div>
         </section>
     </div>
 
-    <div id="ui-pause" class="hidden fixed inset-0 z-[65] flex items-center justify-center p-4 pause-backdrop">
-        <section class="glass-panel pause-modal w-full max-w-md rounded-3xl p-7 sm:p-9 text-center"><p class="text-[10px] tracking-[.3em] text-cyan-300 font-bold">RACE CONTROL</p><h2 class="font-racing text-3xl font-black mt-2">PAUSED</h2><p class="text-sm text-slate-400 mt-2 mb-7">Take a breather. Your race is on hold.</p>
+    <div id="ui-pause" class="hidden fixed inset-0 z-[65] flex items-center justify-center p-4 pause-backdrop" role="dialog" aria-modal="true" aria-labelledby="pause-title">
+        <section class="glass-panel pause-modal w-full max-w-md rounded-3xl p-7 sm:p-9 text-center"><p class="text-[10px] tracking-[.3em] text-cyan-300 font-bold">RACE CONTROL</p><h2 id="pause-title" class="font-racing text-3xl font-black mt-2">PAUSED</h2><p class="text-sm text-slate-400 mt-2 mb-7">Take a breather. Your race is on hold.</p>
             <div class="space-y-3"><button id="btn-resume-race" class="btn-glow w-full py-3.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 font-racing font-bold">RESUME RACE</button><button id="btn-restart-race" class="w-full py-3 rounded-xl bg-slate-800 text-white font-bold">RESTART RACE</button><button id="btn-pause-quit" class="w-full py-3 rounded-xl border border-rose-400/30 text-rose-300 font-bold">QUIT TO GARAGE</button></div><p class="text-[10px] text-slate-500 mt-5">Press P or ESC to resume</p></section>
     </div>
 
     <!-- ========================================================= -->
     <!-- 2. MULTIPLAYER LOBBY MODAL                                -->
     <!-- ========================================================= -->
-    <div id="ui-mp-lobby" class="hidden fixed inset-0 z-40 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div id="ui-mp-lobby" class="hidden fixed inset-0 z-40 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="mp-lobby-title" tabindex="-1">
         <div class="glass-panel rounded-3xl max-w-lg w-full p-6 sm:p-8 relative">
             <button id="btn-close-mp" class="absolute top-5 right-5 text-slate-400 hover:text-white text-sm font-bold px-3 py-1 rounded-xl bg-slate-800/80 cursor-pointer">
                 ✕ Back
@@ -190,7 +218,7 @@
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">
                 Local Browser Room Sync
             </div>
-            <h2 class="font-racing text-2xl font-black text-white mb-1">MULTIPLAYER LOBBY</h2>
+            <h2 id="mp-lobby-title" class="font-racing text-2xl font-black text-white mb-1">MULTIPLAYER LOBBY</h2>
             <p class="text-xs text-slate-400 mb-5">
                 Create a room and open another tab or window on this same browser profile to test local room synchronization. This is not internet multiplayer.
             </p>
@@ -214,7 +242,7 @@
                         Join
                     </button>
                 </div>
-                <p id="mp-error-msg" class="text-xs text-rose-400 font-semibold hidden"></p>
+                <p id="mp-error-msg" role="alert" tabindex="-1" class="text-xs text-rose-300 font-semibold hidden"></p>
             </div>
 
             <!-- Step B: Active Room Roster -->
@@ -293,10 +321,10 @@
 
         <!-- Center Status Banners (Countdown, Wrong Way, Boost, Lap Alert) -->
         <div class="flex flex-col items-center justify-center my-auto pointer-events-none">
-            <div id="hud-countdown" class="hidden font-racing text-7xl sm:text-9xl font-black italic text-white drop-shadow-[0_0_35px_rgba(56,189,248,0.85)]">
+            <div id="hud-countdown" role="status" aria-live="assertive" aria-atomic="true" class="hidden font-racing text-7xl sm:text-9xl font-black italic text-white drop-shadow-[0_0_35px_rgba(56,189,248,0.85)]">
                 3
             </div>
-            <div id="hud-banner" class="hidden px-6 py-2 rounded-full bg-amber-500/90 text-slate-950 font-racing font-black text-sm sm:text-lg tracking-widest uppercase shadow-lg">
+            <div id="hud-banner" role="status" aria-live="polite" aria-atomic="true" class="hidden px-6 py-2 rounded-full bg-amber-500/90 text-slate-950 font-racing font-black text-sm sm:text-lg tracking-widest uppercase shadow-lg">
                 FINAL LAP!
             </div>
         </div>
@@ -305,21 +333,22 @@
         <div class="flex items-end justify-between gap-4">
             <!-- Track Radar Minimap -->
             <div class="glass-panel p-2.5 rounded-2xl">
-                <canvas id="minimap-canvas" width="150" height="150" class="w-28 h-28 sm:w-36 sm:h-36 rounded-xl bg-slate-950/70"></canvas>
+                <canvas id="minimap-canvas" width="150" height="150" role="img" aria-label="Race circuit minimap showing your car and nearby racers" class="w-28 h-28 sm:w-36 sm:h-36 rounded-xl bg-slate-950/70"></canvas>
             </div>
 
             <div id="hud-weapon-panel" class="glass-panel rounded-2xl px-3 py-2.5 flex flex-col gap-2 pointer-events-auto">
-                <div><div class="text-[9px] font-bold tracking-[.2em] text-slate-400">COMBAT SLOT</div><div id="hud-weapon-name" class="font-racing text-xs font-black text-white mt-1">NO WEAPON</div></div>
-                <button id="btn-use-weapon" disabled class="weapon-fire px-4 py-2 rounded-xl font-racing text-[10px] font-black tracking-wider" title="Press F to use your power-up">FIRE [F]</button>
+                <div><div class="text-[9px] font-bold tracking-[.2em] text-slate-400">COMBAT SLOT</div><div id="hud-weapon-name" role="status" aria-live="polite" aria-atomic="true" class="font-racing text-xs font-black text-white mt-1">NO WEAPON</div></div>
+                <button id="btn-use-weapon" disabled aria-label="Use currently held power-up; keyboard shortcut F" class="weapon-fire px-4 py-2 rounded-xl font-racing text-[10px] font-black tracking-wider" title="Press F to use your power-up">FIRE [F]</button>
             </div>
 
             <!-- Touch Controls for Mobile / Tablet -->
-            <div class="flex sm:hidden gap-2 pointer-events-auto">
-                <button id="touch-left" class="glass-panel w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg active:bg-sky-500/40">◀</button>
-                <button id="touch-right" class="glass-panel w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg active:bg-sky-500/40">▶</button>
-                <button id="touch-drift" class="glass-panel px-3 h-12 rounded-xl flex items-center justify-center font-racing text-xs font-bold text-amber-400 active:bg-amber-500/40">DRIFT</button>
-                <button id="touch-gas" class="glass-panel px-4 h-12 rounded-xl flex items-center justify-center font-racing text-xs font-bold text-emerald-400 active:bg-emerald-500/40">GAS</button>
-                <button id="touch-boost" class="glass-panel px-3 h-12 rounded-xl flex items-center justify-center font-racing text-[10px] font-bold text-cyan-300 active:bg-cyan-500/40">NITRO</button>
+            <div class="touch-controls flex sm:hidden gap-2 pointer-events-auto">
+                <button id="touch-left" aria-label="Steer left" class="glass-panel w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg active:bg-sky-500/40">◀</button>
+                <button id="touch-right" aria-label="Steer right" class="glass-panel w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg active:bg-sky-500/40">▶</button>
+                <button id="touch-drift" aria-label="Hold to drift" class="glass-panel px-3 h-12 rounded-xl flex items-center justify-center font-racing text-xs font-bold text-amber-400 active:bg-amber-500/40">DRIFT</button>
+                <button id="touch-gas" aria-label="Accelerate" class="glass-panel px-4 h-12 rounded-xl flex items-center justify-center font-racing text-xs font-bold text-emerald-400 active:bg-emerald-500/40">GAS</button>
+                <button id="touch-brake" aria-label="Brake or reverse" class="glass-panel px-3 h-12 rounded-xl flex items-center justify-center font-racing text-[10px] font-bold text-rose-300 active:bg-rose-500/40">BRAKE</button>
+                <button id="touch-boost" aria-label="Use nitro boost" class="glass-panel px-3 h-12 rounded-xl flex items-center justify-center font-racing text-[10px] font-bold text-cyan-300 active:bg-cyan-500/40">NITRO</button>
             </div>
 
             <!-- Digital Speedometer & Boost Gauge -->
@@ -346,12 +375,12 @@
     <!-- ========================================================= -->
     <!-- 4. POST-RACE PODIUM / LEADERBOARD SCREEN                  -->
     <!-- ========================================================= -->
-    <div id="ui-podium" class="hidden fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div id="ui-podium" class="hidden fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4" role="region" aria-labelledby="podium-title" aria-live="polite">
         <div class="glass-panel rounded-3xl max-w-2xl w-full p-6 sm:p-8 text-center">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-bold uppercase tracking-widest mb-2">
                 Checkered Flag
             </div>
-            <h2 id="podium-title" class="font-racing text-3xl sm:text-4xl font-black text-white mb-6">
+            <h2 id="podium-title" tabindex="-1" class="font-racing text-3xl sm:text-4xl font-black text-white mb-6">
                 RACE COMPLETE
             </h2>
 
@@ -373,7 +402,7 @@
     </div>
 
     <!-- Toast Notification Banner -->
-    <div id="toast-box" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-opacity duration-300">
+    <div id="toast-box" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-opacity duration-300" role="status" aria-live="polite" aria-atomic="true">
         <div id="toast-text" class="glass-panel px-5 py-2.5 rounded-full text-xs font-bold text-sky-300 border border-sky-400/40 shadow-xl"></div>
     </div>
 

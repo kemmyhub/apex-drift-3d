@@ -54,8 +54,28 @@
         }
         .countdown-anim { animation: pulseScale 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         body.boosting #game-canvas { filter: saturate(1.28) contrast(1.06); }
-        #btn-quality { min-width: 82px; }
-        /* Custom scrollbar */
+#btn-quality { min-width: 82px; }
+.touch-controls button { touch-action: none; }
+.touch-controls button:focus-visible { outline: 3px solid #42e8ff; outline-offset: 2px; }
+.startup-error[hidden] { display: none; }
+.startup-error {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #f8fafc;
+  background: radial-gradient(ellipse at top, #122744, #050914 68%);
+  font-family: Inter, Arial, sans-serif;
+}
+.startup-error__card { width: min(100%, 560px); padding: clamp(24px, 6vw, 44px); border: 1px solid rgba(66,232,255,.35); border-radius: 24px; background: rgba(7,13,27,.96); box-shadow: 0 28px 90px rgba(0,0,0,.65); }
+.startup-error__eyebrow { margin: 0 0 12px; color: #42e8ff; font-size: 11px; font-weight: 800; letter-spacing: .2em; }
+.startup-error__card h1 { margin: 0 0 12px; font-size: clamp(25px, 6vw, 36px); line-height: 1.12; }
+.startup-error__card p:not(.startup-error__eyebrow) { color: #cad5e3; line-height: 1.65; }
+.startup-error__card button { margin-top: 12px; padding: 12px 18px; border: 0; border-radius: 12px; background: #42e8ff; color: #07101c; font: inherit; font-weight: 800; cursor: pointer; }
+.startup-error__card button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+/* Custom scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: rgba(15,23,42,0.5); }
         ::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.4); border-radius: 99px; }
@@ -825,4 +845,30 @@ body { overflow:hidden; }
   #hud-weapon-panel {
     position:fixed; top:66px; right:12px; bottom:auto; z-index:25; width:126px; min-width:0;
   }
+}
+
+/* Stage 2 keyboard and reduced-motion accessibility */
+button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:focus-visible {
+  outline: 3px solid #9bf5ff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(3, 7, 17, .95), 0 0 20px rgba(66, 232, 255, .35);
+}
+input, textarea { user-select: text; -webkit-user-select: text; }
+.tutorial-backdrop { display:flex; align-items:center; justify-content:center; background:rgba(2,6,16,.88); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
+.tutorial-backdrop[hidden] { display:none; }
+.tutorial-modal { border-color:rgba(66,232,255,.4); background:linear-gradient(145deg,rgba(12,24,45,.99),rgba(4,9,22,.99)); box-shadow:0 35px 110px rgba(0,0,0,.72); }
+.tutorial-content { min-height:130px; padding:18px 0 6px; color:#dbe8f6; line-height:1.7; }
+.tutorial-content h3 { margin:0 0 8px; color:#9bf5ff; font:800 16px Orbitron,sans-serif; letter-spacing:.05em; }
+.tutorial-content p { margin:0; }
+.tutorial-button { min-height:44px; padding:10px 14px; border:1px solid rgba(148,190,255,.25); border-radius:12px; background:#17243a; color:#eff7ff; font-weight:800; cursor:pointer; }
+.tutorial-button--primary { border-color:#42e8ff; background:#42e8ff; color:#03101d; }
+.tutorial-button:disabled { opacity:.55; }
+#color-swatches button:focus-visible { outline:3px solid #fff; outline-offset:4px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .btn-glow:hover:not(:disabled), #car-cards > *:hover { transform:none !important; }
+}
+@media (max-width: 520px) {
+  .tutorial-backdrop { align-items:flex-start; }
+  .tutorial-modal { margin-top:auto; margin-bottom:auto; padding:20px; }
 }
