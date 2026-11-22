@@ -801,3 +801,28 @@ body { overflow:hidden; }
   #ui-race-hud > div:last-child > [class~="sm:hidden"] button { min-height:38px; }
   #hud-weapon-panel { top:54px; right:8px; width:104px; }
 }
+
+
+@media (min-width:641px) and (max-width:900px) {
+  #ui-race-hud { padding:64px 12px 12px; }
+  #ui-race-hud > div:first-child { flex-wrap:wrap; }
+  #ui-race-hud > div:last-child {
+    display:grid;
+    grid-template-columns:100px minmax(0,1fr);
+    grid-template-areas:"map speed" "touch touch";
+    align-items:end;
+    gap:10px;
+  }
+  #ui-race-hud > div:last-child > div:first-child { grid-area:map; padding:7px; }
+  #ui-race-hud #minimap-canvas { width:92px; height:92px; }
+  #ui-race-hud > div:last-child > .skew-box { grid-area:speed; min-width:0; width:100%; }
+  #ui-race-hud > div:last-child > [class~="sm:hidden"] {
+    grid-area:touch; display:flex; flex-wrap:wrap; justify-content:center; gap:8px; width:100%;
+  }
+  #ui-race-hud > div:last-child > [class~="sm:hidden"] button {
+    flex:1 1 70px; min-height:48px; min-width:0;
+  }
+  #hud-weapon-panel {
+    position:fixed; top:66px; right:12px; bottom:auto; z-index:25; width:126px; min-width:0;
+  }
+}
