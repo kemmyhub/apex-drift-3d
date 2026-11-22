@@ -1,4 +1,5 @@
 import { CAR_MODELS } from "./carCatalog.js";
+import { getLateralRetention } from "./VehiclePhysics.js";
 
 const THREE = window.THREE;
 
@@ -327,9 +328,6 @@ class Vehicle {
             const boostMultiplier = this.boostTimer > 0 ? 1.34 : 1.0;
             const effectiveMaxSpeed = this.carSpec.maxSpeed * boostMultiplier * (this.isAI ? this.aiSkill : 1.0);
 
-            // Forward direction vector
-            const forward = new THREE.Vector3(Math.sin(this.heading), 0, Math.cos(this.heading));
-
             // Acceleration / Braking
             if (throttle > 0) {
                 this.speed += this.carSpec.accelForce * boostMultiplier * dt;
@@ -355,11 +353,12 @@ class Vehicle {
             this.heading += steer * this.carSpec.turnRate * turnMultiplier * speedTurnFactor * reverseSign * dt;
 
             // Lateral grip vs drift slide
+            const forward = new THREE.Vector3(Math.sin(this.heading), 0, Math.cos(this.heading));
             const right = new THREE.Vector3(Math.cos(this.heading), 0, -Math.sin(this.heading));
             const longitudinal = this.velocity.dot(forward);
             const lateral = this.velocity.dot(right);
             const targetLongitudinal = this.speed;
-            const lateralRetention = this.isDrifting ? 0.965 : THREE.MathUtils.clamp(1 - (7.5 * this.carSpec.grip * dt), 0.08, 0.92);
+            const lateralRetention = getLateralRetention(this.isDrifting, this.carSpec.grip, dt);
             const lateralAcceleration = steer * Math.abs(this.speed) * (this.isDrifting ? 0.42 : 0.13);
             const nextLateral = lateral * lateralRetention + lateralAcceleration * dt;
             const nextLongitudinal = THREE.MathUtils.lerp(longitudinal, targetLongitudinal, Math.min(1, (this.isDrifting ? 3.2 : 10.5) * dt));
