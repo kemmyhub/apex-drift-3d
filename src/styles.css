@@ -59,3 +59,155 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: rgba(15,23,42,0.5); }
         ::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.4); border-radius: 99px; }
+
+
+/* APEX DRIFT 3D visual refresh */
+:root {
+  color-scheme: dark;
+  --apex-cyan: #42e8ff;
+  --apex-blue: #3478ff;
+  --apex-violet: #9b72ff;
+  --apex-panel: rgba(7, 13, 27, .82);
+  --apex-line: rgba(148, 190, 255, .16);
+  --apex-muted: #91a4bf;
+}
+html { background: #050914; }
+body {
+  background:
+    radial-gradient(ellipse at 15% 12%, rgba(20, 111, 190, .16), transparent 36%),
+    radial-gradient(ellipse at 86% 82%, rgba(104, 48, 190, .13), transparent 34%),
+    #050914;
+  letter-spacing: .01em;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: .14;
+  background-image: linear-gradient(rgba(150, 210, 255, .08) 1px, transparent 1px), linear-gradient(90deg, rgba(150, 210, 255, .08) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+#ui-main-menu {
+  padding: clamp(14px, 2.6vw, 34px);
+  background: linear-gradient(180deg, rgba(3, 7, 18, .2), rgba(3, 7, 18, .08) 45%, rgba(3, 7, 18, .58));
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(66, 232, 255, .35) transparent;
+}
+#ui-main-menu > .pointer-events-auto:first-child { margin-bottom: 18px; }
+#ui-main-menu h1 {
+  letter-spacing: -.055em;
+  line-height: 1.08;
+  text-shadow: 0 8px 38px rgba(24, 174, 255, .22);
+}
+#ui-main-menu .inline-flex.rounded-full {
+  box-shadow: 0 0 24px rgba(56, 189, 248, .08);
+}
+.glass-panel {
+  background: linear-gradient(145deg, rgba(15, 27, 49, .91), rgba(5, 11, 25, .88));
+  border: 1px solid rgba(145, 190, 255, .19);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .48), inset 0 1px 0 rgba(255, 255, 255, .055);
+  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+}
+#ui-main-menu .glass-panel { position: relative; overflow: hidden; }
+#ui-main-menu .glass-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(66, 232, 255, .55), transparent);
+  pointer-events: none;
+}
+#ui-main-menu h2 {
+  letter-spacing: .12em;
+  text-shadow: 0 0 18px rgba(66, 232, 255, .12);
+}
+#car-cards { perspective: 900px; }
+#car-cards > * {
+  min-width: 0;
+  border-radius: 16px;
+  transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+#car-cards > *:hover {
+  transform: translateY(-4px);
+  border-color: rgba(66, 232, 255, .5);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .28);
+}
+#color-swatches button {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(255,255,255,.28);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.035);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+#color-swatches button:hover { transform: scale(1.16); box-shadow: 0 0 0 4px rgba(66,232,255,.15); }
+#upgrade-list > * {
+  border: 1px solid rgba(148, 190, 255, .12);
+  background: rgba(2, 8, 20, .48);
+  border-radius: 13px;
+  padding: 10px 12px;
+}
+#ui-main-menu button, #ui-mp-lobby button { letter-spacing: .055em; }
+#ui-main-menu button:focus-visible, #ui-mp-lobby button:focus-visible,
+#ui-main-menu input:focus-visible, #ui-main-menu select:focus-visible {
+  outline: 2px solid var(--apex-cyan);
+  outline-offset: 3px;
+}
+#btn-start-sp, #btn-start-tt, #btn-open-mp {
+  min-height: 58px;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 10px 24px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.13);
+}
+#btn-start-sp { background-image: linear-gradient(105deg, #087cc9, #3157d9 58%, #5747c9); }
+#btn-open-mp { background-image: linear-gradient(105deg, #4934bd, #7540c9 55%, #a23a9b); }
+#btn-start-tt { background: linear-gradient(105deg, rgba(22,38,60,.96), rgba(12,24,42,.96)); }
+#btn-start-sp:hover, #btn-open-mp:hover { filter: brightness(1.13); }
+#track-select, #input-player-name, #input-room-code {
+  background-color: rgba(3, 9, 22, .88);
+  border-color: rgba(148, 190, 255, .2);
+}
+#profile-xp-bar { box-shadow: 0 0 12px rgba(110, 90, 255, .55); }
+#best-lap-badge { font-variant-numeric: tabular-nums; }
+#ui-mp-lobby { z-index: 60; }
+#ui-mp-lobby > div { box-shadow: 0 30px 100px rgba(0,0,0,.7); }
+#ui-race-hud .glass-panel {
+  background: rgba(5, 12, 27, .72);
+  border-color: rgba(148, 190, 255, .2);
+  box-shadow: 0 12px 32px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.btn-glow { will-change: transform; }
+button, select, input { -webkit-tap-highlight-color: transparent; }
+button:disabled { opacity: .42; cursor: not-allowed; filter: grayscale(.45); }
+::selection { color: #03101d; background: var(--apex-cyan); }
+::-webkit-scrollbar-thumb { background: linear-gradient(var(--apex-cyan), #5b72ff); }
+@media (min-width: 1024px) {
+  #ui-main-menu > .grid {
+    align-items: stretch;
+    max-height: min(72vh, 760px);
+  }
+  #ui-main-menu > .grid > .glass-panel { min-height: 0; }
+}
+@media (max-width: 1023px) {
+  #ui-main-menu { justify-content: flex-start; gap: 18px; }
+  #ui-main-menu > .grid { align-items: stretch; }
+}
+@media (max-width: 640px) {
+  #ui-main-menu { padding: 12px; gap: 14px; }
+  #ui-main-menu h1 { font-size: clamp(1.8rem, 9vw, 2.7rem); }
+  #ui-main-menu > .grid { gap: 12px; }
+  #ui-main-menu > .grid > .glass-panel { padding: 15px; border-radius: 20px; }
+  #car-cards { gap: 7px; }
+  #car-cards > * { border-radius: 12px; }
+  #ui-main-menu .grid.grid-cols-3 { gap: 10px; }
+  #btn-start-sp, #btn-start-tt, #btn-open-mp { min-height: 54px; padding: 12px; font-size: 11px; }
+  #btn-quality { min-width: 68px; padding: 9px 10px; }
+  #ui-mp-lobby { align-items: flex-start; overflow-y: auto; }
+  #ui-mp-lobby > div { margin: auto 0; padding: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
