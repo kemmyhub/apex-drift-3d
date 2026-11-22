@@ -463,3 +463,41 @@ button:disabled { opacity: .42; cursor: not-allowed; filter: grayscale(.45); }
     width: 100%;
   }
 }
+
+
+/* Arcade combat power-up HUD */
+#hud-weapon-panel {
+  min-width: 142px;
+  border-color: rgba(255, 107, 130, .28);
+  background: linear-gradient(145deg, rgba(28, 12, 27, .9), rgba(7, 11, 25, .86));
+  box-shadow: 0 12px 32px rgba(0,0,0,.3), 0 0 22px rgba(255,77,109,.08);
+}
+#hud-weapon-name { color: #ff91a5; letter-spacing: .06em; }
+.weapon-fire {
+  color: #fff;
+  background: linear-gradient(105deg, #ed416b, #9b3ed0);
+  border: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 5px 18px rgba(220,55,116,.22);
+  cursor: pointer;
+  transition: transform .15s ease, filter .15s ease, opacity .15s ease;
+}
+.weapon-fire.weapon-ready { animation: weaponPulse 1.2s ease-in-out infinite; }
+.weapon-fire:disabled { filter: grayscale(1); opacity: .38; cursor: not-allowed; animation: none; }
+.weapon-fire:active:not(:disabled) { transform: scale(.94); }
+@keyframes weaponPulse {
+  0%,100% { box-shadow: 0 0 0 rgba(255,77,109,0); }
+  50% { box-shadow: 0 0 22px rgba(255,77,109,.5); }
+}
+@media (max-width: 639px) {
+  #hud-weapon-panel {
+    position: absolute;
+    right: 10px;
+    bottom: 142px;
+    min-width: 112px;
+    padding: 8px;
+    gap: 6px;
+    border-radius: 12px;
+  }
+  #hud-weapon-panel .weapon-fire { padding: 8px 10px; font-size: 9px; }
+  #hud-weapon-name { font-size: 10px; }
+}
