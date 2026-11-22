@@ -15,6 +15,7 @@ src/
     carCatalog.js         Vehicle specifications and paint options
     ProfileManager.js     Persistent driver XP, credits and race records
     UpgradeManager.js     Per-car engine, handling and nitro upgrades
+    AchievementManager.js Persistent race and drift achievements
     TrackCatalog.js       Selectable circuit layouts and environments
     RaceTrack.js          Circuit geometry and track environment
     Vehicle.js            Vehicle models, handling and AI driving
@@ -56,3 +57,8 @@ This repository is connected to the Cloudflare Pages project `apex-drift-3d`. Pu
 ## Garage upgrades
 
 Race credits can be spent on engine, handling, and nitro upgrades for each vehicle. Each upgrade category has five levels and is saved locally in the browser. Upgrades affect the selected player car, not AI opponents.
+
+
+## Achievements
+
+Race milestones unlock one-time credit rewards. Current milestones include completing races, winning, podium finishes, and lifetime drift-score targets. Achievement unlocks are stored locally in the browser.
