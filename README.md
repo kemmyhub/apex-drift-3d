@@ -2,6 +2,25 @@
 
 A browser-based 3D arcade racing game. Built with Vite and Three.js, with installable PWA support and Cloudflare Pages deployment.
 
+## Project structure
+
+```text
+src/
+  main.js                 Application entry point
+  styles.css              Game interface and HUD styles
+  audio/
+    SoundEngine.js        Engine, drift, boost and music audio
+  game/
+    ApexDriftApp.js       Game lifecycle, menus, HUD and camera
+    carCatalog.js         Vehicle specifications and paint options
+    RaceTrack.js          Circuit geometry and track environment
+    Vehicle.js            Vehicle models, handling and AI driving
+  network/
+    MultiplayerManager.js Local browser-room synchronization
+```
+
+The game is being separated into focused modules so new systems can be developed and tested independently. The current multiplayer manager is still local-browser synchronization, not internet multiplayer.
+
 ## Development
 
 ```bash
