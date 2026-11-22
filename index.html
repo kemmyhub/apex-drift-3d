@@ -158,6 +158,7 @@
                 <div class="text-[11px] text-slate-400 flex flex-wrap justify-between gap-2 pt-1 border-t border-slate-800">
                     <span><strong class="text-slate-200">WASD / Arrows</strong> Drive</span>
                     <span><strong class="text-slate-200">SPACE</strong> Drift</span>
+                    <span><strong class="text-slate-200">F</strong> Power-up</span>
                     <span><strong class="text-slate-200">R</strong> Reset Car</span>
                 </div>
             </div>
@@ -304,6 +305,11 @@
             <!-- Track Radar Minimap -->
             <div class="glass-panel p-2.5 rounded-2xl">
                 <canvas id="minimap-canvas" width="150" height="150" class="w-28 h-28 sm:w-36 sm:h-36 rounded-xl bg-slate-950/70"></canvas>
+            </div>
+
+            <div id="hud-weapon-panel" class="glass-panel rounded-2xl px-3 py-2.5 flex flex-col gap-2 pointer-events-auto">
+                <div><div class="text-[9px] font-bold tracking-[.2em] text-slate-400">COMBAT SLOT</div><div id="hud-weapon-name" class="font-racing text-xs font-black text-white mt-1">NO WEAPON</div></div>
+                <button id="btn-use-weapon" disabled class="weapon-fire px-4 py-2 rounded-xl font-racing text-[10px] font-black tracking-wider" title="Press F to use your power-up">FIRE [F]</button>
             </div>
 
             <!-- Touch Controls for Mobile / Tablet -->
