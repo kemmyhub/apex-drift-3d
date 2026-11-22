@@ -12,7 +12,7 @@ class RaceTrack {
             this.checkpoints = [];
             this.boostPads = [];
             this.buildCircuit();
-            this.group.add(this.group);
+            this.scene.add(this.group);
         }
 
         buildCircuit() {
@@ -32,7 +32,7 @@ class RaceTrack {
             ground.rotation.x = -Math.PI / 2;
             ground.position.y = -0.15;
             ground.receiveShadow = true;
-            this.scene.add(ground);
+            this.group.add(ground);
 
             // Build Asphalt Ribbon, Curbs, and Outer Guardrails
             this.buildRoadMesh();
@@ -95,7 +95,7 @@ class RaceTrack {
             });
             const roadMesh = new THREE.Mesh(roadGeo, roadMat);
             roadMesh.receiveShadow = true;
-            this.scene.add(roadMesh);
+            this.group.add(roadMesh);
 
             // Racing Curbs
             const curbGeo = new THREE.BufferGeometry();
@@ -107,7 +107,7 @@ class RaceTrack {
             const curbMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6 });
             const curbMesh = new THREE.Mesh(curbGeo, curbMat);
             curbMesh.receiveShadow = true;
-            this.scene.add(curbMesh);
+            this.group.add(curbMesh);
 
             // Center dashed racing line & barrier posts
             const dashGeo = new THREE.BoxGeometry(0.45, 0.03, 2.4);
@@ -126,7 +126,7 @@ class RaceTrack {
                 const dash = new THREE.Mesh(dashGeo, dashMat);
                 dash.position.set(pt.x, 0.03, pt.z);
                 dash.rotation.y = angle;
-                this.scene.add(dash);
+                this.group.add(dash);
 
                 // Left and right barrier blocks
                 [-1, 1].forEach(side => {
@@ -136,7 +136,7 @@ class RaceTrack {
                     barrier.rotation.y = angle;
                     barrier.castShadow = true;
                     barrier.receiveShadow = true;
-                    this.scene.add(barrier);
+                    this.group.add(barrier);
                 });
             }
         }
@@ -191,7 +191,7 @@ class RaceTrack {
             banner.castShadow = true;
             gantry.add(banner);
 
-            this.scene.add(gantry);
+            this.group.add(gantry);
         }
 
         buildCheckpoints() {
@@ -231,14 +231,14 @@ class RaceTrack {
                 mesh.position.set(pt.x, 0.06, pt.z);
                 mesh.rotation.x = -Math.PI / 2;
                 mesh.rotation.z = -angle;
-                this.scene.add(mesh);
+                this.group.add(mesh);
 
                 // Side neon beacons
                 const beaconGeo = new THREE.BoxGeometry(0.4, 1.2, 0.4);
                 const beaconMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
                 const b1 = new THREE.Mesh(beaconGeo, beaconMat);
                 b1.position.set(pt.x + 3.2, 0.6, pt.z);
-                this.scene.add(b1);
+                this.group.add(b1);
 
                 this.boostPads.push({ position: pt, radius: 4.5, mesh });
             });
@@ -262,7 +262,7 @@ class RaceTrack {
                 stand.add(roof);
 
                 stand.position.set(24, 0, zPos);
-                this.scene.add(stand);
+                this.group.add(stand);
             });
 
             // Stylized Low-Poly Pine Trees scattered safely outside track corridor
@@ -303,7 +303,7 @@ class RaceTrack {
                 const scale = 0.8 + Math.random() * 0.75;
                 tree.scale.set(scale, scale, scale);
                 tree.position.copy(candidate);
-                this.scene.add(tree);
+                this.group.add(tree);
                 placed++;
             }
         }
