@@ -1,32 +1,22 @@
 const THREE = window.THREE;
+import { getTrackConfig } from "./TrackCatalog.js";
 
 class RaceTrack {
-        constructor(scene) {
+        constructor(scene, trackId = "neon-coast") {
             this.scene = scene;
-            this.roadWidth = 24;
+            this.group = new THREE.Group();
+            this.config = getTrackConfig(trackId);
+            this.trackId = this.config.id;
+            this.roadWidth = this.config.roadWidth;
             this.samples = 420;
             this.checkpoints = [];
             this.boostPads = [];
             this.buildCircuit();
+            this.group.add(this.group);
         }
 
         buildCircuit() {
-            // Sweeping Grand Prix circuit with hairpins, chicanes & high-speed straight
-            const controlPoints = [
-                new THREE.Vector3(0, 0, 0),
-                new THREE.Vector3(0, 0, -140),
-                new THREE.Vector3(45, 0, -240),
-                new THREE.Vector3(165, 0, -260),
-                new THREE.Vector3(250, 0, -190),
-                new THREE.Vector3(230, 0, -85),
-                new THREE.Vector3(145, 0, -45),
-                new THREE.Vector3(155, 0, 55),
-                new THREE.Vector3(255, 0, 115),
-                new THREE.Vector3(235, 0, 225),
-                new THREE.Vector3(115, 0, 255),
-                new THREE.Vector3(25, 0, 195),
-                new THREE.Vector3(-15, 0, 110)
-            ];
+            const controlPoints = this.config.points.map(point => new THREE.Vector3(point[0], point[1], point[2]));
 
             this.curve = new THREE.CatmullRomCurve3(controlPoints, true, 'catmullrom', 0.5);
             this.curvePoints = this.curve.getSpacedPoints(this.samples);
@@ -34,7 +24,7 @@ class RaceTrack {
             // Ground terrain
             const groundGeo = new THREE.PlaneGeometry(1400, 1400);
             const groundMat = new THREE.MeshStandardMaterial({
-                color: 0x153624,
+                color: this.config.groundColor,
                 roughness: 0.92,
                 metalness: 0.05
             });
@@ -279,7 +269,7 @@ class RaceTrack {
             const trunkGeo = new THREE.CylinderGeometry(0.5, 0.7, 3, 6);
             const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
             const leavesGeo = new THREE.ConeGeometry(3.2, 8.5, 7);
-            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.8 });
+            const leavesMat = new THREE.MeshStandardMaterial({ color: this.config.treeColor, roughness: 0.8 });
 
             let placed = 0;
             let attempts = 0;
@@ -334,6 +324,22 @@ class RaceTrack {
                 point: this.curvePoints[bestIdx],
                 distance: Math.sqrt(minDistSq)
             };
+        }
+
+        dispose() {
+            this.scene.remove(this.group);
+            const geometries = new Set();
+            const materials = new Set();
+            this.group.traverse(object => {
+                if (object.geometry) geometries.add(object.geometry);
+                if (Array.isArray(object.material)) object.material.forEach(material => materials.add(material));
+                else if (object.material) materials.add(object.material);
+            });
+            geometries.forEach(geometry => geometry.dispose());
+            materials.forEach(material => {
+                if (material.map) material.map.dispose();
+                material.dispose();
+            });
         }
     }
 
