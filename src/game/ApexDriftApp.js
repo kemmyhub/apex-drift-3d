@@ -4,6 +4,7 @@ import { RaceTrack } from "./RaceTrack.js";
 import { Vehicle } from "./Vehicle.js";
 import { MultiplayerManager } from "../network/MultiplayerManager.js";
 import { ProfileManager } from "./ProfileManager.js";
+import { TRACK_CATALOG, getTrackConfig } from "./TrackCatalog.js";
 
 const THREE = window.THREE;
 
@@ -13,6 +14,8 @@ class ApexDriftApp {
             this.profile = new ProfileManager();
             this.selectedCarId = CAR_MODELS[0].id;
             this.selectedColor = PAINT_COLORS[0].hex;
+            this.selectedTrackId = localStorage.getItem("apex_track") || "neon-coast";
+            if (!TRACK_CATALOG.some(track => track.id === this.selectedTrackId)) this.selectedTrackId = "neon-coast";
             this.mode = 'MENU'; // MENU | COUNTDOWN | RACING | PODIUM
             this.raceType = 'SP'; // SP | TT | MP
             this.vehicles = [];
@@ -25,7 +28,11 @@ class ApexDriftApp {
             this.input = { up: false, down: false, left: false, right: false, drift: false };
 
             this.initThree();
-            this.track = new RaceTrack(this.scene);
+            const initialTrack = getTrackConfig(this.selectedTrackId);
+            this.scene.background.setHex(initialTrack.skyColor);
+            this.scene.fog.color.setHex(initialTrack.fogColor);
+            this.scene.fog.density = initialTrack.fogDensity;
+            this.track = new RaceTrack(this.scene, this.selectedTrackId);
             this.buildPreviewShowcase();
             this.initUI();
             this.bindInputs();
@@ -99,6 +106,21 @@ class ApexDriftApp {
         }
         cycleGraphicsMode() { const idx = this.graphicsModes.indexOf(this.graphicsMode); this.graphicsMode = this.graphicsModes[(idx + 1) % this.graphicsModes.length]; localStorage.setItem('apex_graphics', this.graphicsMode); this.applyGraphicsMode(); this.showToast('Graphics set to ' + this.graphicsMode); }
 
+        changeTrack(trackId) {
+            if (!TRACK_CATALOG.some(track => track.id === trackId) || trackId === this.selectedTrackId) return;
+            if (this.showcaseCar) { this.showcaseCar.dispose(); this.showcaseCar = null; }
+            if (this.track) this.track.dispose();
+            this.selectedTrackId = trackId;
+            localStorage.setItem("apex_track", trackId);
+            const config = getTrackConfig(trackId);
+            this.scene.background.setHex(config.skyColor);
+            this.scene.fog.color.setHex(config.fogColor);
+            this.scene.fog.density = config.fogDensity;
+            this.track = new RaceTrack(this.scene, trackId);
+            this.buildPreviewShowcase();
+            this.showToast(config.name + " selected");
+        }
+
         buildPreviewShowcase() {
             if (this.showcaseCar) {
                 this.showcaseCar.dispose();
@@ -163,6 +185,12 @@ class ApexDriftApp {
             this.updateStatBars(CAR_MODELS[0]);
             this.refreshBestLapBadge();
             this.refreshProfileUI();
+
+            // Track selection
+            const trackSelect = document.getElementById("track-select");
+            trackSelect.innerHTML = TRACK_CATALOG.map(track => "<option value=\"" + track.id + "\">" + track.name + " · " + track.location + "</option>").join("");
+            trackSelect.value = this.selectedTrackId;
+            trackSelect.onchange = event => this.changeTrack(event.target.value);
 
             // Graphics quality selector
             document.getElementById('btn-quality').onclick = () => this.cycleGraphicsMode();
