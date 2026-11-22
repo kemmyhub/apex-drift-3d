@@ -120,6 +120,7 @@ class ApexDriftApp {
             this.selectedTrackId = trackId;
             localStorage.setItem("apex_track", trackId);
             const config = getTrackConfig(trackId);
+            this.updateTrackBrief();
             this.scene.background.setHex(config.skyColor);
             this.scene.fog.color.setHex(config.fogColor);
             this.scene.fog.density = config.fogDensity;
@@ -127,6 +128,16 @@ class ApexDriftApp {
             this.powerUps = new PowerUpManager(this.scene, this.track, message => { if (message) this.showToast(message); });
             this.buildPreviewShowcase();
             this.showToast(config.name + " selected");
+        }
+
+        updateTrackBrief() {
+            const config = getTrackConfig(this.selectedTrackId);
+            const title = document.getElementById("track-brief-title");
+            const description = document.getElementById("track-brief-description");
+            const location = document.getElementById("track-brief-location");
+            if (title) title.textContent = config.name;
+            if (description) description.textContent = config.description;
+            if (location) location.textContent = config.location.toUpperCase();
         }
 
         buildPreviewShowcase() {
@@ -176,9 +187,12 @@ class ApexDriftApp {
                             ? 'bg-sky-500/20 border-sky-400 shadow-[0_0_20px_rgba(56,189,248,0.25)]'
                             : 'bg-slate-900/75 border-slate-800 hover:border-slate-600'
                     }`;
+                    const accent = car.bodyStyle === "prototype" ? "#a78bfa" : car.bodyStyle === "tuner" ? "#fb923c" : "#42e8ff";
                     card.innerHTML = `
-                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-sky-300">${car.tag}</span>
-                        <div class="font-racing text-xs sm:text-sm font-black text-white mt-1.5">${car.name}</div>
+                        <div class="car-card-topline"><span class="car-class-tag">${car.tag}</span><span class="car-selected-mark">${active ? "SELECTED" : "VIEW"}</span></div>
+                        <div class="car-silhouette car-silhouette-${car.bodyStyle}" style="--car-accent:${accent}"><span></span><i></i></div>
+                        <div class="font-racing text-[11px] sm:text-sm font-black text-white mt-1.5">${car.name}</div>
+                        <div class="car-card-stats"><span>SPD <b>${car.stats.speed}</b></span><span>ACC <b>${car.stats.accel}</b></span><span>HND <b>${car.stats.handling}</b></span></div>
                     `;
                     card.onclick = () => {
                         this.selectedCarId = car.id;
@@ -205,6 +219,7 @@ class ApexDriftApp {
             const trackSelect = document.getElementById("track-select");
             trackSelect.innerHTML = TRACK_CATALOG.map(track => "<option value=\"" + track.id + "\">" + track.name + " · " + track.location + "</option>").join("");
             trackSelect.value = this.selectedTrackId;
+            this.updateTrackBrief();
             trackSelect.onchange = event => this.changeTrack(event.target.value);
 
             // Graphics quality selector
