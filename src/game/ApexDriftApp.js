@@ -4,6 +4,7 @@ import { RaceTrack } from "./RaceTrack.js";
 import { Vehicle } from "./Vehicle.js";
 import { MultiplayerManager } from "../network/MultiplayerManager.js";
 import { ProfileManager } from "./ProfileManager.js";
+import { UpgradeManager, UPGRADE_TYPES } from "./UpgradeManager.js";
 import { TRACK_CATALOG, getTrackConfig } from "./TrackCatalog.js";
 
 const THREE = window.THREE;
@@ -12,6 +13,7 @@ class ApexDriftApp {
         constructor() {
             this.sound = new SoundEngine();
             this.profile = new ProfileManager();
+            this.upgrades = new UpgradeManager(this.profile);
             this.selectedCarId = CAR_MODELS[0].id;
             this.selectedColor = PAINT_COLORS[0].hex;
             this.selectedTrackId = localStorage.getItem("apex_track") || "neon-coast";
@@ -129,7 +131,8 @@ class ApexDriftApp {
                 id: 'preview',
                 name: 'Preview',
                 carId: this.selectedCarId,
-                colorHex: this.selectedColor
+                colorHex: this.selectedColor,
+                carSpec: this.upgrades.applyToSpec(CAR_MODELS.find(car => car.id === this.selectedCarId) || CAR_MODELS[0], this.selectedCarId)
             });
             this.showcaseCar.position.set(0, 0, 0);
             this.showcaseCar.heading = 0.5;
@@ -174,7 +177,8 @@ class ApexDriftApp {
                     card.onclick = () => {
                         this.selectedCarId = car.id;
                         renderCarCards();
-                        this.updateStatBars(car);
+                        this.updateStatBars(this.upgrades.applyToSpec(car, car.id));
+                        this.renderUpgradePanel();
                         this.buildPreviewShowcase();
                         this.sound.playBeep(false);
                     };
@@ -182,9 +186,14 @@ class ApexDriftApp {
                 });
             };
             renderCarCards();
-            this.updateStatBars(CAR_MODELS[0]);
+            this.updateStatBars(this.upgrades.applyToSpec(CAR_MODELS[0], this.selectedCarId));
+            this.renderUpgradePanel();
             this.refreshBestLapBadge();
             this.refreshProfileUI();
+            ["engine", "handling", "nitro"].forEach(type => {
+                const button = document.getElementById("upgrade-" + type);
+                if (button) button.onclick = () => this.buyUpgrade(type);
+            });
 
             // Track selection
             const trackSelect = document.getElementById("track-select");
@@ -292,6 +301,40 @@ class ApexDriftApp {
             document.getElementById('stat-accel-bar').style.width = car.stats.accel + '%';
             document.getElementById('stat-handling-val').textContent = car.stats.handling;
             document.getElementById('stat-handling-bar').style.width = car.stats.handling + '%';
+        }
+
+        renderUpgradePanel() {
+            const container = document.getElementById("upgrade-list");
+            if (!container || !this.upgrades) return;
+            const levels = this.upgrades.levels(this.selectedCarId);
+            container.innerHTML = Object.keys(UPGRADE_TYPES).map(type => {
+                const config = UPGRADE_TYPES[type];
+                const level = levels[type];
+                const cost = this.upgrades.nextCost(this.selectedCarId, type);
+                const maxed = cost === null;
+                const canAfford = !maxed && this.profile.data.credits >= cost;
+                const detail = type === "engine" ? "Top speed and acceleration" : type === "handling" ? "Cornering response and grip" : "Longer turbo boost duration";
+                return `<div class="flex items-center gap-3 rounded-xl bg-slate-900/80 border border-slate-800 p-3">
+                    <div class="min-w-0 flex-1"><div class="flex items-center justify-between gap-2"><span class="text-xs font-bold text-white">${config.label}</span><span class="text-[10px] font-racing text-sky-300">LV ${level}/5</span></div><div class="text-[10px] text-slate-500 mt-0.5">${detail}</div><div class="h-1.5 bg-slate-800 rounded-full overflow-hidden mt-2"><div class="h-full bg-gradient-to-r from-sky-500 to-cyan-300" style="width:${level * 20}%"></div></div></div>
+                    <button id="upgrade-${type}" ${maxed || !canAfford ? "disabled" : ""} class="px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider ${maxed ? "bg-slate-800 text-slate-500" : canAfford ? "bg-sky-500 text-slate-950 hover:bg-sky-400" : "bg-slate-800 text-slate-500"} disabled:opacity-60">${maxed ? "MAX" : cost.toLocaleString() + " CR"}</button>
+                </div>`;
+            }).join("");
+            Object.keys(UPGRADE_TYPES).forEach(type => {
+                const button = document.getElementById("upgrade-" + type);
+                if (button && !button.disabled) button.onclick = () => this.buyUpgrade(type);
+            });
+        }
+
+        buyUpgrade(type) {
+            const result = this.upgrades.purchase(this.selectedCarId, type);
+            if (!result.ok) { this.showToast(result.reason); return; }
+            const base = CAR_MODELS.find(car => car.id === this.selectedCarId) || CAR_MODELS[0];
+            this.updateStatBars(this.upgrades.applyToSpec(base, this.selectedCarId));
+            this.buildPreviewShowcase();
+            this.refreshProfileUI();
+            this.renderUpgradePanel();
+            this.showToast(`${UPGRADE_TYPES[type].label} upgraded to level ${result.level}`);
+            this.sound.playBeep(true);
         }
 
         refreshBestLapBadge() {
@@ -415,6 +458,7 @@ class ApexDriftApp {
                     name: playerName,
                     carId: this.selectedCarId,
                     colorHex: this.selectedColor,
+                    carSpec: this.upgrades.applyToSpec(CAR_MODELS.find(car => car.id === this.selectedCarId) || CAR_MODELS[0], this.selectedCarId),
                     isPlayer: true
                 });
                 this.playerVehicle.placeOnGrid(0);
