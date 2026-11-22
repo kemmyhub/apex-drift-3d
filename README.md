@@ -24,3 +24,8 @@ npm run preview
 - Production branch: `main`
 
 The current release is a single-player browser game. The multiplayer prototype is local to browser contexts and is not internet multiplayer.
+
+
+## Deployment
+
+This repository is connected to the Cloudflare Pages project `apex-drift-3d`. Pushes to `main` are configured as production deployments.
