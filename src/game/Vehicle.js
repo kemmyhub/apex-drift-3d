@@ -11,7 +11,7 @@ class Vehicle {
             this.isPlayer = !!options.isPlayer;
             this.isAI = !!options.isAI;
             this.isRemote = !!options.isRemote;
-            this.carSpec = CAR_MODELS.find(c => c.id === options.carId) || CAR_MODELS[0];
+            this.carSpec = options.carSpec || CAR_MODELS.find(c => c.id === options.carId) || CAR_MODELS[0];
             this.colorHex = options.colorHex || '#0ea5e9';
             this.aiSkill = options.aiSkill || 0.9;
 
@@ -237,7 +237,7 @@ class Vehicle {
                 this.driftScore += Math.round(dt * Math.abs(this.speed) * 3.2);
             }
             if (this.isPlayer && input.boost && this.nitroCharge >= 25 && this.boostTimer <= 0.12) {
-                this.nitroCharge = Math.max(0, this.nitroCharge - 25); this.boostTimer = 1.45; sound.playBoost();
+                this.nitroCharge = Math.max(0, this.nitroCharge - 25); this.boostTimer = this.carSpec.nitroDuration || 1.45; sound.playBoost();
             }
             const boostMultiplier = this.boostTimer > 0 ? 1.34 : 1.0;
             const effectiveMaxSpeed = this.carSpec.maxSpeed * boostMultiplier * (this.isAI ? this.aiSkill : 1.0);
