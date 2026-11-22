@@ -3,12 +3,14 @@ import { CAR_MODELS, PAINT_COLORS } from "./carCatalog.js";
 import { RaceTrack } from "./RaceTrack.js";
 import { Vehicle } from "./Vehicle.js";
 import { MultiplayerManager } from "../network/MultiplayerManager.js";
+import { ProfileManager } from "./ProfileManager.js";
 
 const THREE = window.THREE;
 
 class ApexDriftApp {
         constructor() {
             this.sound = new SoundEngine();
+            this.profile = new ProfileManager();
             this.selectedCarId = CAR_MODELS[0].id;
             this.selectedColor = PAINT_COLORS[0].hex;
             this.mode = 'MENU'; // MENU | COUNTDOWN | RACING | PODIUM
@@ -160,6 +162,7 @@ class ApexDriftApp {
             renderCarCards();
             this.updateStatBars(CAR_MODELS[0]);
             this.refreshBestLapBadge();
+            this.refreshProfileUI();
 
             // Graphics quality selector
             document.getElementById('btn-quality').onclick = () => this.cycleGraphicsMode();
@@ -266,6 +269,18 @@ class ApexDriftApp {
         refreshBestLapBadge() {
             const txt = isFinite(this.personalBestLap) ? this.formatTime(this.personalBestLap) : '--:--.--';
             document.getElementById('best-lap-badge').textContent = `Best Lap: ${txt}`;
+        }
+
+        refreshProfileUI() {
+            const p = this.profile.data;
+            const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+            set("profile-level", this.profile.level);
+            set("profile-credits", p.credits.toLocaleString());
+            set("profile-races", p.races.toLocaleString());
+            set("profile-wins", p.wins.toLocaleString());
+            set("profile-xp-label", `${p.xp.toLocaleString()} / ${this.profile.nextLevelXP.toLocaleString()} XP`);
+            const bar = document.getElementById("profile-xp-bar");
+            if (bar) bar.style.width = `${this.profile.levelProgress}%`;
         }
 
         renderLobbyRoster(code, players, isHost) {
@@ -480,10 +495,12 @@ class ApexDriftApp {
             document.getElementById('ui-main-menu').classList.remove('hidden');
 
             this.refreshBestLapBadge();
+            this.refreshProfileUI();
             this.buildPreviewShowcase();
         }
 
         showPodium() {
+            if (this.mode === 'PODIUM') return;
             this.mode = 'PODIUM';
             this.sound.updateVehicleAudio(0, false, false);
 
@@ -500,6 +517,24 @@ class ApexDriftApp {
                 if (b.finished) return 1;
                 return b.totalProgress - a.totalProgress;
             });
+
+            const playerPosition = sorted.findIndex(v => v.isPlayer) + 1;
+            const reward = this.profile.recordRace({
+                position: playerPosition || sorted.length,
+                driftPoints: this.playerVehicle ? this.playerVehicle.driftScore : 0,
+                bestLap: this.playerVehicle ? this.playerVehicle.bestLapTime : null,
+                mode: this.raceType
+            });
+            const rewardEl = document.getElementById("podium-rewards");
+            if (rewardEl) {
+                rewardEl.innerHTML = '<div class="flex flex-wrap justify-center gap-3 text-sm font-bold">' +
+                    '<span class="rounded-xl bg-sky-500/15 border border-sky-400/30 px-4 py-2 text-sky-200">+' + reward.xpEarned + ' XP</span>' +
+                    '<span class="rounded-xl bg-amber-500/15 border border-amber-400/30 px-4 py-2 text-amber-200">+' + reward.creditsEarned + ' CREDITS</span>' +
+                    '<span class="rounded-xl bg-fuchsia-500/15 border border-fuchsia-400/30 px-4 py-2 text-fuchsia-200">LEVEL ' + reward.level + '</span>' +
+                    '</div><p class="mt-2 text-xs text-slate-400">' +
+                    (reward.leveledUp ? 'LEVEL UP! Your driver rank has increased.' : 'Rewards saved to your driver profile.') + '</p>';
+            }
+            this.refreshProfileUI();
 
             const container = document.getElementById('podium-results');
             container.innerHTML = '';
