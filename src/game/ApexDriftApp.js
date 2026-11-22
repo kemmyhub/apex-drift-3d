@@ -5,6 +5,7 @@ import { Vehicle } from "./Vehicle.js";
 import { MultiplayerManager } from "../network/MultiplayerManager.js";
 import { ProfileManager } from "./ProfileManager.js";
 import { UpgradeManager, UPGRADE_TYPES } from "./UpgradeManager.js";
+import { AchievementManager } from "./AchievementManager.js";
 import { TRACK_CATALOG, getTrackConfig } from "./TrackCatalog.js";
 
 const THREE = window.THREE;
@@ -14,6 +15,7 @@ class ApexDriftApp {
             this.sound = new SoundEngine();
             this.profile = new ProfileManager();
             this.upgrades = new UpgradeManager(this.profile);
+            this.achievements = new AchievementManager(this.profile);
             this.selectedCarId = CAR_MODELS[0].id;
             this.selectedColor = PAINT_COLORS[0].hex;
             this.selectedTrackId = localStorage.getItem("apex_track") || "neon-coast";
@@ -597,6 +599,7 @@ class ApexDriftApp {
                 bestLap: this.playerVehicle ? this.playerVehicle.bestLapTime : null,
                 mode: this.raceType
             });
+            const unlockedAchievements = this.achievements.evaluate();
             const rewardEl = document.getElementById("podium-rewards");
             if (rewardEl) {
                 rewardEl.innerHTML = '<div class="flex flex-wrap justify-center gap-3 text-sm font-bold">' +
@@ -607,6 +610,12 @@ class ApexDriftApp {
                     (reward.leveledUp ? 'LEVEL UP! Your driver rank has increased.' : 'Rewards saved to your driver profile.') + '</p>';
             }
             this.refreshProfileUI();
+            const achievementEl = document.getElementById('podium-achievements');
+            if (achievementEl) {
+                achievementEl.innerHTML = unlockedAchievements.map(item =>
+                    '<div class="flex items-center justify-between gap-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-2 text-left"><div><div class="text-xs font-bold text-amber-200">ACHIEVEMENT UNLOCKED · ' + item.name + '</div><div class="text-[10px] text-slate-400">' + item.description + '</div></div><span class="shrink-0 text-xs font-black text-amber-300">+' + item.reward + ' CR</span></div>'
+                ).join('');
+            }
 
             const container = document.getElementById('podium-results');
             container.innerHTML = '';
